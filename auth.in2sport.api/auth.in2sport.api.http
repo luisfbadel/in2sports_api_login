@@ -1,0 +1,6 @@
+@auth.in2sport.api_HostAddress = http://localhost:5175
+
+GET {{auth.in2sport.api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

@@ -1,0 +1,50 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.8.34511.84
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "auth.in2sport.api", "auth.in2sport.api\auth.in2sport.api.csproj", "{C3C8DF8A-2DB6-4E9A-AB47-415DD890EDCE}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "1.Api", "1.Api", "{5D4F6635-C134-4D7F-8786-28657986A36B}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "2.Application", "2.Application", "{C80B7E2E-9F7F-4362-8958-5450D33728FD}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "3.Infrastructure", "3.Infrastructure", "{84EE00E3-9B54-41AD-A940-A92F281F8781}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "4.UnitTest", "4.UnitTest", "{138796FA-2B79-4C86-99AA-F46948A34E6E}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "auth.in2sport.application", "auth.in2sport.application\auth.in2sport.application.csproj", "{A17AF87F-0841-4439-8CD1-99D2C4C6E4E5}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "auth.in2sport.infrastructure", "auth.in2sport.infrastructure\auth.in2sport.infrastructure.csproj", "{6297336A-EA3E-4E3A-9FE5-3A74E3E0655D}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{C3C8DF8A-2DB6-4E9A-AB47-415DD890EDCE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C3C8DF8A-2DB6-4E9A-AB47-415DD890EDCE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C3C8DF8A-2DB6-4E9A-AB47-415DD890EDCE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C3C8DF8A-2DB6-4E9A-AB47-415DD890EDCE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A17AF87F-0841-4439-8CD1-99D2C4C6E4E5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A17AF87F-0841-4439-8CD1-99D2C4C6E4E5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A17AF87F-0841-4439-8CD1-99D2C4C6E4E5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A17AF87F-0841-4439-8CD1-99D2C4C6E4E5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6297336A-EA3E-4E3A-9FE5-3A74E3E0655D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6297336A-EA3E-4E3A-9FE5-3A74E3E0655D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6297336A-EA3E-4E3A-9FE5-3A74E3E0655D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6297336A-EA3E-4E3A-9FE5-3A74E3E0655D}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{C3C8DF8A-2DB6-4E9A-AB47-415DD890EDCE} = {5D4F6635-C134-4D7F-8786-28657986A36B}
+		{A17AF87F-0841-4439-8CD1-99D2C4C6E4E5} = {C80B7E2E-9F7F-4362-8958-5450D33728FD}
+		{6297336A-EA3E-4E3A-9FE5-3A74E3E0655D} = {84EE00E3-9B54-41AD-A940-A92F281F8781}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {65CEA7F5-3479-47A6-BA09-8187C068DC43}
+	EndGlobalSection
+EndGlobal
