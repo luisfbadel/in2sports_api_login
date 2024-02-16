@@ -4,9 +4,9 @@ using auth.in2sport.application.Services.UserServices.Response;
 
 namespace auth.in2sport.application.AutoMapper
 {
-    public class User : Profile
+    public class UserResponseMapper : Profile
     {
-        public User() {
+        public UserResponseMapper() {
             CreateMap<Users, UserResponse>()
                 .ForMember(
                     dest => dest.Id,
