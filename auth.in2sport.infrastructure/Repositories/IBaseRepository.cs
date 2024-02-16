@@ -1,6 +1,4 @@
-﻿using System;
-using System.Linq.Expressions;
-
+﻿using System.Linq.Expressions;
 
 namespace auth.in2sport.infrastructure.Repositories
 {

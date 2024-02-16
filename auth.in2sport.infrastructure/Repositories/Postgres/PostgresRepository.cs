@@ -1,5 +1,4 @@
-﻿using auth.in2sport.infrastructure.Repositories.Postgres.Entities;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
 
 namespace auth.in2sport.infrastructure.Repositories.Postgres

@@ -1,5 +1,4 @@
-﻿
-using auth.in2sport.application.Services.LoginServices;
+﻿using auth.in2sport.application.Services.LoginServices;
 using auth.in2sport.application.Services.LoginServices.Requests;
 using Microsoft.AspNetCore.Mvc;
 
@@ -32,7 +31,7 @@ namespace auth.in2sport.api.Controllers
         #endregion
 
 
-        [Route("api/v1/user/signIn")]
+        [Route("api/v1/signIn")]
         [HttpPost]
         public async Task<IActionResult> SignIn(SignInRequest request)
         {
@@ -43,9 +42,9 @@ namespace auth.in2sport.api.Controllers
             else return BadRequest();
         }
 
-        [Route("api/v1/user/signUp")]
+        [Route("api/v1/signUp")]
         [HttpPost]
-        public async Task<IActionResult> SignUp([FromBody] SignUpRequest request)
+        public async Task<IActionResult> SignUp(SignUpRequest request)
         {
             if (ModelState.IsValid)
             {

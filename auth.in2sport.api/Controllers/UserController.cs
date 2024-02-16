@@ -1,7 +1,4 @@
-﻿using auth.in2sport.application.Services.LoginServices.Requests;
-using auth.in2sport.application.Services.UserServices;
-using auth.in2sport.infrastructure.Repositories.Postgres.Entities;
-using AutoMapper;
+﻿using auth.in2sport.application.Services.UserServices;
 using Microsoft.AspNetCore.Mvc;
 
 namespace auth.in2sport.api.Controllers
@@ -34,7 +31,7 @@ namespace auth.in2sport.api.Controllers
 
         [Route("api/v1/user/get-all")]
         [HttpGet]
-        public async Task<IActionResult> getAll(int page = 1, int pageSize = 10)
+        public async Task<IActionResult> getAll(int page = 1, int pageSize = 30)
         {
            var result = await _userService.GetUsers(page, pageSize);
            return Ok(result);

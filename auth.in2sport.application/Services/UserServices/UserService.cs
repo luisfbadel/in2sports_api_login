@@ -1,15 +1,8 @@
-﻿using auth.in2sport.application.Services.UserServices.Request;
-using auth.in2sport.application.Services.UserServices.Response;
+﻿using auth.in2sport.application.Services.UserServices.Response;
 using auth.in2sport.infrastructure.Repositories.Postgres.Entities;
 using auth.in2sport.infrastructure.Repositories;
 using Microsoft.Extensions.Configuration;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using AutoMapper;
-using System.Linq.Expressions;
 
 namespace auth.in2sport.application.Services.UserServices
 {
@@ -27,7 +20,6 @@ namespace auth.in2sport.application.Services.UserServices
         }
         public async Task<BaseResponse<List<UserResponse>>> GetUsers(int page, int pageSize)
         { 
-
             var users = await _userRepository.GetAsync();
             var listUsers = users
                 .Select(o => _mapper.Map<UserResponse>(o))
