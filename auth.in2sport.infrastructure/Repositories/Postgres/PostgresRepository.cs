@@ -49,7 +49,7 @@ namespace auth.in2sport.infrastructure.Repositories.Postgres
         public async Task<TEntity> GetByIdAsync(Guid id)
         {
             var result = await _dbContext.Set<TEntity>().FindAsync(id);
-            return result;
+            return result!;
         }
 
         public async Task<TEntity> GetByEmailAsync(string email)
@@ -64,9 +64,9 @@ namespace auth.in2sport.infrastructure.Repositories.Postgres
 
             var entities = await _dbContext.Set<TEntity>().ToListAsync();
 
-            var result = entities.FirstOrDefault(u => emailProperty.GetValue(u) != null && emailProperty.GetValue(u).ToString() == email);
+            var result = entities.FirstOrDefault(u => emailProperty.GetValue(u) != null && emailProperty.GetValue(u)!.ToString() == email);
 
-            return result;
+            return result!;
         }
 
         public async Task<bool> UpdateAsync(TEntity entity)

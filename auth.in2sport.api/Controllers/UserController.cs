@@ -1,8 +1,10 @@
 ﻿using auth.in2sport.application.Services.UserServices;
+using auth.in2sport.application.Services.UserServices.Request;
 using Microsoft.AspNetCore.Mvc;
 
 namespace auth.in2sport.api.Controllers
 {
+    [ApiController]
     public class UserController : Controller
     {
         #region Private Properties
@@ -36,6 +38,14 @@ namespace auth.in2sport.api.Controllers
            var result = await _userService.GetUsers(page, pageSize);
            return Ok(result);
         }
+        [Route("api/v1/user/update-user")]
+        [HttpPut]
+        public async Task<IActionResult> updateUser(UpdateUserRequest request)
+        {
+            var result = await _userService.UpdateUser(request);
+            return Ok(result);
+        }
+
 
         [Route("api/v1/user/activate-user")]
         [HttpPost]

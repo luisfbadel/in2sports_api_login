@@ -4,9 +4,10 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace auth.in2sport.api.Controllers
 {
+    [ApiController]
     public class LoginController : Controller
-
     {
+
         #region Private Properties
 
         /// <summary>
@@ -44,7 +45,7 @@ namespace auth.in2sport.api.Controllers
 
         [Route("api/v1/login/signUp")]
         [HttpPost]
-        public async Task<IActionResult> SignUp(SignUpRequest request)
+        public async Task<IActionResult> SignUp( SignUpRequest request)
         {
             if (ModelState.IsValid)
             {

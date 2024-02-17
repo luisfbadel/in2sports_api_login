@@ -3,6 +3,7 @@ using auth.in2sport.infrastructure.Repositories.Postgres.Entities;
 using auth.in2sport.infrastructure.Repositories;
 using Microsoft.Extensions.Configuration;
 using AutoMapper;
+using auth.in2sport.application.Services.UserServices.Request;
 
 namespace auth.in2sport.application.Services.UserServices
 {
@@ -38,7 +39,7 @@ namespace auth.in2sport.application.Services.UserServices
         public async Task<BaseResponse<UserResponse>> ActivateUser(Guid id)
         {
             var user = await _userRepository.GetByIdAsync(id);
-            user.status = 1;
+            user.Status = 1;
             var result = await _userRepository.UpdateAsync(user);
             var response = new BaseResponse<UserResponse>();
             if (result)
@@ -57,7 +58,7 @@ namespace auth.in2sport.application.Services.UserServices
         public async Task<BaseResponse<UserResponse>> InactivateUser(Guid id)
         {
             var user = await _userRepository.GetByIdAsync(id);
-            user.status = 0;
+            user.Status = 0;
             var response = new BaseResponse<UserResponse>();
             var result = await _userRepository.UpdateAsync(user);
             if (result)
@@ -69,6 +70,35 @@ namespace auth.in2sport.application.Services.UserServices
             {
                 response.StatusCode = 400;
                 response.Message = "Error al Inactivar";
+            }
+            return response;
+        }
+
+        public async Task<BaseResponse<UserResponse>> UpdateUser(UpdateUserRequest request)
+        {
+            var userEntity = new Users();
+            userEntity.Id = request.Id;
+            userEntity.Email = request.Email;
+            userEntity.TypeUser = request.TypeUser;
+            userEntity.FirstName = request.FirstName;
+            userEntity.SecondName = request.SecondName;
+            userEntity.FirstLastname = request.FirstLastname;
+            userEntity.SecondLastname = request.SecondLastname;
+            userEntity.TypeDocument = request.TypeDocument;
+            userEntity.DocumentNumber = request.DocumentNumber;
+            userEntity.PhoneNumber = request.PhoneNumber;
+            userEntity.Address = request.Address;
+            var response = new BaseResponse<UserResponse>();
+            var result = await _userRepository.UpdateAsync(userEntity);
+            if (result)
+            {
+                response.StatusCode = 200;
+                response.Message = "OK";
+            }
+            else
+            {
+                response.StatusCode = 400;
+                response.Message = "Error al actualizar";
             }
             return response;
         }

@@ -64,13 +64,23 @@ namespace auth.in2sport.application.Services.LoginServices
                 var userEntity = new Users();
                 userEntity.Email = request.Email;
                 userEntity.Password = EncriptPasscode(request.Password!);
-                userEntity.status = 1;
+                userEntity.Status = 1;
+                userEntity.TypeUser = request.TypeUser;
+                userEntity.FirstName = request.FirstName;
+                userEntity.SecondName = request.SecondName;
+                userEntity.FirstLastname = request.FirstLastname;
+                userEntity.SecondLastname = request.SecondLastname;
+                userEntity.TypeDocument = request.TypeDocument;
+                userEntity.DocumentNumber = request.DocumentNumber;
+                userEntity.PhoneNumber = request.PhoneNumber;
+                userEntity.Address = request.Address;
+
                 var result = await _loginRepository.CreateAsync(userEntity);
 
 
                 if (result)
                 {
-                    response.StatusCode = 200;
+                    response.StatusCode = 201;
                     response.Message = "OK";
                 }
                 else

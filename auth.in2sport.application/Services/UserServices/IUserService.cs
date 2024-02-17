@@ -1,4 +1,5 @@
-﻿using auth.in2sport.application.Services.UserServices.Response;
+﻿using auth.in2sport.application.Services.UserServices.Request;
+using auth.in2sport.application.Services.UserServices.Response;
 
 namespace auth.in2sport.application.Services.UserServices
 {
@@ -7,6 +8,6 @@ namespace auth.in2sport.application.Services.UserServices
         Task<BaseResponse<List<UserResponse>>> GetUsers(int page, int pageSize);
         Task<BaseResponse<UserResponse>> ActivateUser(Guid id);
         Task<BaseResponse<UserResponse>> InactivateUser(Guid id);
-
+        Task<BaseResponse<UserResponse>> UpdateUser(UpdateUserRequest entity);
     }
 }
