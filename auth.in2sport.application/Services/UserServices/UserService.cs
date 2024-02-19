@@ -23,7 +23,7 @@ namespace auth.in2sport.application.Services.UserServices
 
         #endregion
 
-        #region
+        #region Constructor
 
         /// <summary>
         /// Defines constructor
@@ -95,22 +95,52 @@ namespace auth.in2sport.application.Services.UserServices
         }
         public async Task<BaseResponse<UserResponse>> UpdateUser(UpdateUserRequest request)
         {
-            var user = await _userRepository.GetByIdAsync(request.Id);
-            _mapper.Map(request, user);
-            UpdateChangedProperties(user, request);
-            var result = await _userRepository.UpdateAsync(user);
-            var response = new BaseResponse<UserResponse>();
-            if (result)
+            using (var transaction = await _userRepository.BeginTransactionAsync())
             {
-                response.StatusCode = 200;
-                response.Message = "OK";
+                try
+                {
+                    var user = await _userRepository.GetByIdAsync(request.Id);
+                    _mapper.Map(request, user);
+                    UpdateChangedProperties(user, request);
+
+                    var result = await _userRepository.UpdateAsync(user);
+
+                    if (result)
+                    {
+                        await transaction.CommitAsync();
+                        var response = new BaseResponse<UserResponse>
+                        {
+                            StatusCode = 200,
+                            Message = "OK"
+                        };
+                        return response;
+                    }
+                    else
+                    {
+                        throw new UpdateFailedException("La actualización del usuario falló.");
+                    }
+                }
+                catch (UpdateFailedException ex)
+                {
+                    await transaction.RollbackAsync();
+                    var response = new BaseResponse<UserResponse>
+                    {
+                        StatusCode = 400,
+                        Message = $"Error al actualizar: {ex.Message}"
+                    };
+                    return response;
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    var response = new BaseResponse<UserResponse>
+                    {
+                        StatusCode = 500,
+                        Message = $"Error inesperado: {ex.Message}"
+                    };
+                    return response;
+                }
             }
-            else
-            {
-                response.StatusCode = 400;
-                response.Message = "Error al actualizar";
-            }
-            return response;
         }
 
 

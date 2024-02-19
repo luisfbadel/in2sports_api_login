@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using System.Linq.Expressions;
 
 namespace auth.in2sport.infrastructure.Repositories.Postgres
@@ -85,6 +86,11 @@ namespace auth.in2sport.infrastructure.Repositories.Postgres
             _dbContext.Set<TEntity>().Remove(entityToDelete);
             var result = await _dbContext.SaveChangesAsync();
             return result > 0;
+        }
+
+        public async Task<IDbContextTransaction> BeginTransactionAsync()
+        {
+            return await _dbContext.Database.BeginTransactionAsync();
         }
     }
 }

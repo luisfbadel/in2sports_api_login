@@ -25,7 +25,7 @@ namespace auth.in2sport.application.Services.LoginServices
 
         #endregion
 
-        #region
+        #region Constructor
 
         /// <summary>
         /// Defines constructor
@@ -75,44 +75,70 @@ namespace auth.in2sport.application.Services.LoginServices
         }
         public async Task<BaseResponse<SignUpResponse>> SignUp(SignUpRequest request)
         {
-            var user = await _loginRepository.GetByEmailAsync(request.Email!);
             var response = new BaseResponse<SignUpResponse>();
 
-            if (user == null)
+            try
             {
-                var userEntity = new Users();
-                userEntity.Email = request.Email;
-                userEntity.Password = EncriptPasscode(request.Password!);
-                userEntity.Status = 1;
-                userEntity.TypeUser = request.TypeUser;
-                userEntity.FirstName = request.FirstName;
-                userEntity.SecondName = request.SecondName;
-                userEntity.FirstLastname = request.FirstLastname;
-                userEntity.SecondLastname = request.SecondLastname;
-                userEntity.TypeDocument = request.TypeDocument;
-                userEntity.DocumentNumber = request.DocumentNumber;
-                userEntity.PhoneNumber = request.PhoneNumber;
-                userEntity.Address = request.Address;
-
-                var result = await _loginRepository.CreateAsync(userEntity);
-
-
-                if (result)
+                using (var transaction = await _loginRepository.BeginTransactionAsync())
                 {
-                    response.StatusCode = 201;
-                    response.Message = "OK";
-                }
-                else
-                {
-                    response.StatusCode = 401;
-                    response.Message = "Unauthorized";
+                    try
+                    {
+                        var user = await _loginRepository.GetByEmailAsync(request.Email!);
+
+                        if (user == null)
+                        {
+                            var userEntity = new Users
+                            {
+                                Email = request.Email,
+                                Password = EncriptPasscode(request.Password!),
+                                Status = 1,
+                                TypeUser = request.TypeUser,
+                                FirstName = request.FirstName,
+                                SecondName = request.SecondName,
+                                FirstLastname = request.FirstLastname,
+                                SecondLastname = request.SecondLastname,
+                                TypeDocument = request.TypeDocument,
+                                DocumentNumber = request.DocumentNumber,
+                                PhoneNumber = request.PhoneNumber,
+                                Address = request.Address
+                            };
+
+                            var result = await _loginRepository.CreateAsync(userEntity);
+
+                            if (result)
+                            {
+                                await transaction.CommitAsync();
+
+                                response.StatusCode = 201;
+                                response.Message = "OK";
+                            }
+                            else
+                            {
+                                response.StatusCode = 401;
+                                response.Message = "Error al crear el usuario";
+                            }
+                        }
+                        else
+                        {
+                            response.StatusCode = 400;
+                            response.Message = "El usuario ya existe";
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        await transaction.RollbackAsync();
+
+                        response.StatusCode = 500;
+                        response.Message = $"Error durante la creación del usuario: {ex.Message}";
+                    }
                 }
             }
-            else
+            catch (Exception ex)
             {
-                response.StatusCode = 400;
-                response.Message = "El usuario ya existe";
+                response.StatusCode = 500;
+                response.Message = $"Error general: {ex.Message}";
             }
+
             return response;
         }
 
@@ -144,8 +170,26 @@ namespace auth.in2sport.application.Services.LoginServices
 
         private byte[] EncriptPasscode(string password)
         {
-            byte[] hashedPassword = Encoding.Unicode.GetBytes(password!);
-            return hashedPassword;
+            try
+            {
+                byte[] hashedPassword = Encoding.Unicode.GetBytes(password!);
+                return hashedPassword;
+            }
+            catch (ArgumentNullException ex)
+            {
+                Console.WriteLine($"Error: La cadena de contraseña es nula. {ex.Message}");
+                throw;
+            }
+            catch (EncoderFallbackException ex)
+            {
+                Console.WriteLine($"Error: Problema con la codificación de caracteres. {ex.Message}");
+                throw;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error inesperado durante la encriptación de la contraseña. {ex.Message}");
+                throw;
+            }
         }
 
         #endregion
