@@ -33,5 +33,7 @@ namespace auth.in2sport.application.Services.LoginServices.Requests
         public long? PhoneNumber { get; set; }
         [Required]
         public string? Address { get; set; }
+        public string? Status { get; set; }
+
     }
 }

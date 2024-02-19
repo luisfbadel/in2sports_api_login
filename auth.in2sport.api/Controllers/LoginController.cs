@@ -31,7 +31,6 @@ namespace auth.in2sport.api.Controllers
 
         #endregion
 
-
         [Route("api/v1/login/signIn")]
         [HttpPost]
         public async Task<IActionResult> SignIn(SignInRequest request)

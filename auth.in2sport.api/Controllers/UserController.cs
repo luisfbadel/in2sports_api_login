@@ -30,22 +30,25 @@ namespace auth.in2sport.api.Controllers
 
         #endregion
 
-
         [Route("api/v1/user/get-all")]
         [HttpGet]
-        public async Task<IActionResult> getAll(int page = 1, int pageSize = 30)
+        public async Task<IActionResult> GetAll(int page = 1, int pageSize = 30)
         {
            var result = await _userService.GetUsers(page, pageSize);
            return Ok(result);
         }
-        [Route("api/v1/user/update-user")]
-        [HttpPut]
-        public async Task<IActionResult> updateUser(UpdateUserRequest request)
-        {
-            var result = await _userService.UpdateUser(request);
-            return Ok(result);
-        }
 
+        [Route("api/v1/user/update-user")]
+        [HttpPatch]
+        public async Task<IActionResult> UpdateUser(UpdateUserRequest request)
+        {
+            if (ModelState.IsValid)
+            {
+                return Ok(await _userService.UpdateUser(request));
+            }
+            return BadRequest();
+
+        }
 
         [Route("api/v1/user/activate-user")]
         [HttpPost]

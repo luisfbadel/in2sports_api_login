@@ -9,16 +9,37 @@ namespace auth.in2sport.application.Services.UserServices
 {
     public class UserService : IUserService
     {
+
+        #region Pirvate Properties
+
+        /// <summary>
+        /// Instance of the Base Repository
+        /// Instance of the Base Configuration
+        /// Instance of the Base Mapper
+        /// </summary>
         private readonly IBaseRepository<Users> _userRepository;
         private readonly IConfiguration _config;
         private readonly IMapper _mapper;
 
+        #endregion
+
+        #region
+
+        /// <summary>
+        /// Defines constructor
+        /// </summary>
+        /// <param name="userRepository"></param>
+        /// <param name="config"></param>
+        /// <param name="mapper"></param>
+        /// <exception cref="ArgumentNullException"></exception>
         public UserService(IBaseRepository<Users> userRepository, IConfiguration config, IMapper mapper)
         {
             _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
             _config = config ?? throw new ArgumentNullException();
             _mapper = mapper ?? throw new ArgumentNullException();
         }
+
+        #endregion
         public async Task<BaseResponse<List<UserResponse>>> GetUsers(int page, int pageSize)
         { 
             var users = await _userRepository.GetAsync();
@@ -54,13 +75,12 @@ namespace auth.in2sport.application.Services.UserServices
             }
             return response;
         }
-
         public async Task<BaseResponse<UserResponse>> InactivateUser(Guid id)
         {
             var user = await _userRepository.GetByIdAsync(id);
             user.Status = 0;
-            var response = new BaseResponse<UserResponse>();
             var result = await _userRepository.UpdateAsync(user);
+            var response = new BaseResponse<UserResponse>();
             if (result)
             {
                 response.StatusCode = 200;
@@ -73,23 +93,13 @@ namespace auth.in2sport.application.Services.UserServices
             }
             return response;
         }
-
         public async Task<BaseResponse<UserResponse>> UpdateUser(UpdateUserRequest request)
         {
-            var userEntity = new Users();
-            userEntity.Id = request.Id;
-            userEntity.Email = request.Email;
-            userEntity.TypeUser = request.TypeUser;
-            userEntity.FirstName = request.FirstName;
-            userEntity.SecondName = request.SecondName;
-            userEntity.FirstLastname = request.FirstLastname;
-            userEntity.SecondLastname = request.SecondLastname;
-            userEntity.TypeDocument = request.TypeDocument;
-            userEntity.DocumentNumber = request.DocumentNumber;
-            userEntity.PhoneNumber = request.PhoneNumber;
-            userEntity.Address = request.Address;
+            var user = await _userRepository.GetByIdAsync(request.Id);
+            _mapper.Map(request, user);
+            UpdateChangedProperties(user, request);
+            var result = await _userRepository.UpdateAsync(user);
             var response = new BaseResponse<UserResponse>();
-            var result = await _userRepository.UpdateAsync(userEntity);
             if (result)
             {
                 response.StatusCode = 200;
@@ -102,5 +112,27 @@ namespace auth.in2sport.application.Services.UserServices
             }
             return response;
         }
+
+
+        #region Private Methods
+
+        private void UpdateChangedProperties(Users originalUser, UpdateUserRequest request)
+        {
+            var propertyInfos = typeof(UpdateUserRequest).GetProperties();
+
+            foreach (var propertyInfo in propertyInfos)
+            {
+                var propertyName = propertyInfo.Name;
+                var originalValue = originalUser.GetType().GetProperty(propertyName)?.GetValue(originalUser, null);
+                var requestValue = propertyInfo.GetValue(request, null);
+
+                if (originalValue != null && !originalValue.Equals(requestValue))
+                {
+                    originalUser.GetType().GetProperty(propertyName)?.SetValue(originalUser, requestValue);
+                }
+            }
+        }
+
+        #endregion
     }
 }

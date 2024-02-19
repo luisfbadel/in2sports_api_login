@@ -13,14 +13,33 @@ namespace auth.in2sport.application.Services.LoginServices
 {
     public class LoginService : ILoginService
     {
+
+        #region Private Properties
+
+        /// <summary>
+        ///  Instance of the Base Repository
+        ///  Instance of the Condiguration
+        /// </summary>
         private readonly IBaseRepository<Users> _loginRepository;
         private readonly IConfiguration _config;
 
+        #endregion
+
+        #region
+
+        /// <summary>
+        /// Defines constructor
+        /// </summary>
+        /// <param name="loginRepository"></param>
+        /// <param name="config"></param>
+        /// <exception cref="ArgumentNullException"></exception>
         public LoginService(IBaseRepository<Users> loginRepository, IConfiguration config)
         {
             _loginRepository = loginRepository ?? throw new ArgumentNullException(nameof(loginRepository));
             _config = config ?? throw new ArgumentNullException();
         }
+
+        #endregion
 
         public async Task<BaseResponse<SignInResponse>> SignIn(SignInRequest request)
         {
@@ -30,7 +49,7 @@ namespace auth.in2sport.application.Services.LoginServices
 
             if (user != null)
             {
-                var token = Authorize(user);
+                var token = Authorize(request);
                 tokens.AuthToken = token;
                 byte[] hashedPassword = EncriptPasscode(request.Password!);
                 bool validatorPassword = user.Password!.SequenceEqual(hashedPassword);
@@ -97,7 +116,8 @@ namespace auth.in2sport.application.Services.LoginServices
             return response;
         }
 
-        private string Authorize(Users user)
+        #region Private Methods
+        private string Authorize(SignInRequest user)
         {
             var jwt = _config.GetSection("jwt");
 
@@ -127,5 +147,7 @@ namespace auth.in2sport.application.Services.LoginServices
             byte[] hashedPassword = Encoding.Unicode.GetBytes(password!);
             return hashedPassword;
         }
+
+        #endregion
     }
 }
