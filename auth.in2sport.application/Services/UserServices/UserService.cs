@@ -41,58 +41,139 @@ namespace auth.in2sport.application.Services.UserServices
 
         #endregion
         public async Task<BaseResponse<List<UserResponse>>> GetUsers(int page, int pageSize)
-        { 
-            var users = await _userRepository.GetAsync();
-            var listUsers = users
-                .Select(o => _mapper.Map<UserResponse>(o))
-                .ToList();
-            var totalCount = listUsers.Count;
-            var totalPages = (int)Math.Ceiling((decimal)totalCount/pageSize);
-            var usersPerPage = listUsers.Skip((page - 1) * totalPages).Take(pageSize).ToList();
-
+        {
             var response = new BaseResponse<List<UserResponse>>();
-            response.StatusCode = 200;
-            response.Message = "OK";
-            response.Data = usersPerPage;
+
+            try
+            {
+                var users = await _userRepository.GetAsync();
+                var listUsers = users
+                    .Select(o => _mapper.Map<UserResponse>(o))
+                    .ToList();
+                var totalCount = listUsers.Count;
+                var totalPages = (int)Math.Ceiling((decimal)totalCount / pageSize);
+                var usersPerPage = listUsers.Skip((page - 1) * pageSize).Take(pageSize).ToList();
+                response.StatusCode = 200;
+                response.Message = "OK";
+                response.Data = usersPerPage;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error al obtener la lista de usuarios: {ex.Message}");
+
+                response.StatusCode = 500;
+                response.Message = "Error inesperado al obtener la lista de usuarios.";
+            }
+
             return response;
         }
 
         public async Task<BaseResponse<UserResponse>> ActivateUser(Guid id)
         {
-            var user = await _userRepository.GetByIdAsync(id);
-            user.Status = 1;
-            var result = await _userRepository.UpdateAsync(user);
             var response = new BaseResponse<UserResponse>();
-            if (result)
+
+            try
             {
-                response.StatusCode = 200;
-                response.Message = "OK";
+                using (var transaction = await _userRepository.BeginTransactionAsync())
+                {
+                    try
+                    {
+                        var user = await _userRepository.GetByIdAsync(id);
+                        user.Status = 1;
+
+                        var result = await _userRepository.UpdateAsync(user);
+
+                        transaction.Commit();
+
+                        if (result)
+                        {
+                            response.StatusCode = 200;
+                            response.Message = "OK";
+                        }
+                        else
+                        {
+                            response.StatusCode = 400;
+                            response.Message = "Error al Activar";
+
+                            throw new UpdateFailedException("Ocurrió un error al activar el usuario.");
+                        }
+
+                        return response;
+                    }
+                    catch (Exception ex)
+                    {
+                        transaction.Rollback();
+                        Console.WriteLine($"Error durante la activación del usuario: {ex.Message}");
+
+                        response.StatusCode = 500;
+                        response.Message = "Error inesperado al activar el usuario.";
+                        return response;
+                    }
+                }
             }
-            else
+            catch (Exception ex)
             {
-                response.StatusCode = 400;
-                response.Message = "Error al Activar";
+                Console.WriteLine($"Error de transacción: {ex.Message}");
+
+                response.StatusCode = 500;
+                response.Message = "Error inesperado durante la transacción.";
+                return response;
             }
-            return response;
         }
+
         public async Task<BaseResponse<UserResponse>> InactivateUser(Guid id)
         {
-            var user = await _userRepository.GetByIdAsync(id);
-            user.Status = 0;
-            var result = await _userRepository.UpdateAsync(user);
             var response = new BaseResponse<UserResponse>();
-            if (result)
+
+            try
             {
-                response.StatusCode = 200;
-                response.Message = "OK";
+                using (var transaction = await _userRepository.BeginTransactionAsync())
+                {
+                    try
+                    {
+                        var user = await _userRepository.GetByIdAsync(id);
+                        user.Status = 0;
+
+                        var result = await _userRepository.UpdateAsync(user);
+
+                        transaction.Commit();
+
+                        if (result)
+                        {
+                            response.StatusCode = 200;
+                            response.Message = "OK";
+                        }
+                        else
+                        {
+                            response.StatusCode = 400;
+                            response.Message = "Error al Inactivar";
+
+                            throw new UpdateFailedException("Ocurrió un error al inactivar el usuario.");
+                        }
+
+                        return response;
+                    }
+                    catch (Exception ex)
+                    {
+                        transaction.Rollback();
+                        Console.WriteLine($"Error durante la inactivación del usuario: {ex.Message}");
+
+                        response.StatusCode = 500;
+                        response.Message = "Error inesperado al inactivar el usuario.";
+                        return response;
+                    }
+                }
             }
-            else
+            catch (Exception ex)
             {
-                response.StatusCode = 400;
-                response.Message = "Error al Inactivar";
+                Console.WriteLine($"Error de transacción: {ex.Message}");
+
+                response.StatusCode = 500;
+                response.Message = "Error inesperado durante la transacción.";
+                return response;
             }
-            return response;
         }
+
         public async Task<BaseResponse<UserResponse>> UpdateUser(UpdateUserRequest request)
         {
             using (var transaction = await _userRepository.BeginTransactionAsync())
@@ -142,7 +223,6 @@ namespace auth.in2sport.application.Services.UserServices
                 }
             }
         }
-
 
         #region Private Methods
 

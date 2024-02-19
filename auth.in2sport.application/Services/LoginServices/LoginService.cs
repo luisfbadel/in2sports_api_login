@@ -43,22 +43,40 @@ namespace auth.in2sport.application.Services.LoginServices
 
         public async Task<BaseResponse<SignInResponse>> SignIn(SignInRequest request)
         {
-            var user = await _loginRepository.GetByEmailAsync(request.Email!);
             var response = new BaseResponse<SignInResponse>();
             var tokens = new SignInResponse();
 
-            if (user != null)
+            try
             {
-                var token = Authorize(request);
-                tokens.AuthToken = token;
-                byte[] hashedPassword = EncriptPasscode(request.Password!);
-                bool validatorPassword = user.Password!.SequenceEqual(hashedPassword);
+                var user = await _loginRepository.GetByEmailAsync(request.Email!);
 
-                if (validatorPassword)
+                if (user != null)
                 {
-                    response.StatusCode = 200;
-                    response.Message = "OK";
-                    response.Data = tokens;
+                    try
+                    {
+                        var token = Authorize(request);
+                        tokens.AuthToken = token;
+
+                        byte[] hashedPassword = EncriptPasscode(request.Password!);
+                        bool validatorPassword = user.Password!.SequenceEqual(hashedPassword);
+
+                        if (validatorPassword)
+                        {
+                            response.StatusCode = 200;
+                            response.Message = "OK";
+                            response.Data = tokens;
+                        }
+                        else
+                        {
+                            response.StatusCode = 401;
+                            response.Message = "Unauthorized";
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        response.StatusCode = 500;
+                        response.Message = $"Error durante la autorización: {ex.Message}";
+                    }
                 }
                 else
                 {
@@ -66,13 +84,15 @@ namespace auth.in2sport.application.Services.LoginServices
                     response.Message = "Unauthorized";
                 }
             }
-            else
+            catch (Exception ex)
             {
-                response.StatusCode = 401;
-                response.Message = "Unauthorized";
+                response.StatusCode = 500;
+                response.Message = $"Error durante la obtención del usuario: {ex.Message}";
             }
+            
             return response;
         }
+
         public async Task<BaseResponse<SignUpResponse>> SignUp(SignUpRequest request)
         {
             var response = new BaseResponse<SignUpResponse>();
@@ -143,29 +163,44 @@ namespace auth.in2sport.application.Services.LoginServices
         }
 
         #region Private Methods
+
         private string Authorize(SignInRequest user)
         {
-            var jwt = _config.GetSection("jwt");
-
-            var claims = new[]
+            try
             {
-
+                var claims = new[]
+                {
                     new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
                     new Claim(JwtRegisteredClaimNames.Iat, DateTime.UtcNow.ToString()),
                     new Claim("usuario", user.Email!)
-
                 };
 
-            var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]!));
-            var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
-            var token = new JwtSecurityToken(
-                            _config["Jwt:Issuer"],
-                            _config["Jwt:Audience"],
-                                 claims,
-                            expires: DateTime.Now.AddMinutes(60),
-                            signingCredentials: credentials);
+                var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]!));
+                var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
+                var token = new JwtSecurityToken(
+                                _config["Jwt:Issuer"],
+                                _config["Jwt:Audience"],
+                                claims,
+                                expires: DateTime.Now.AddMinutes(60),
+                                signingCredentials: credentials);
 
-            return  new JwtSecurityTokenHandler().WriteToken(token);
+                return new JwtSecurityTokenHandler().WriteToken(token);
+            }
+            catch (ArgumentNullException ex)
+            {
+                Console.WriteLine($"Se produjo una excepción de argumento nulo: {ex.Message}");
+                throw;
+            }
+            catch (ArgumentException ex)
+            {
+                Console.WriteLine($"Se produjo una excepción de argumento inválido: {ex.Message}");
+                throw;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Se produjo una excepción no manejada: {ex.Message}");
+                throw;
+            }
         }
 
         private byte[] EncriptPasscode(string password)
