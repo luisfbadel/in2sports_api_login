@@ -50,47 +50,38 @@ namespace auth.in2sport.application.Services.LoginServices
             {
                 var user = await _loginRepository.GetByEmailAsync(request.Email!);
 
-                if (user != null)
+                if (user == null)
                 {
-                    try
-                    {
-                        var token = Authorize(request);
-                        tokens.AuthToken = token;
-
-                        byte[] hashedPassword = EncriptPasscode(request.Password!);
-                        bool validatorPassword = user.Password!.SequenceEqual(hashedPassword);
-
-                        if (validatorPassword)
-                        {
-                            response.StatusCode = 200;
-                            response.Message = "OK";
-                            response.Data = tokens;
-                        }
-                        else
-                        {
-                            response.StatusCode = 401;
-                            response.Message = "Unauthorized";
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        response.StatusCode = 500;
-                        response.Message = $"Error durante la autorización: {ex.Message}";
-                    }
+                    throw new LoginFailedException("El usuario no existe");
                 }
-                else
+                try
                 {
-                    response.StatusCode = 401;
-                    response.Message = "Unauthorized";
+                    var token = Authorize(request);
+                    tokens.AuthToken = token;
+
+                    byte[] hashedPassword = EncriptPasscode(request.Password!);
+                    bool validatorPassword = user!.Password!.SequenceEqual(hashedPassword);
+
+                    if (!validatorPassword)
+                    {
+                        response.StatusCode = 401;
+                        response.Message = "Unauthorized";
+                        return response;
+                    }
+                    response.StatusCode = 200;
+                    response.Message = "OK";
+                    response.Data = tokens;
+                    return response;
+                }
+                catch (Exception ex)
+                {
+                    throw new LoginFailedException($"Error durante la autorización: {ex.Message}", 500);
                 }
             }
             catch (Exception ex)
             {
-                response.StatusCode = 500;
-                response.Message = $"Error durante la obtención del usuario: {ex.Message}";
+                throw new LoginFailedException($"Error durante la obtención del usuario: {ex.Message}", 500);
             }
-            
-            return response;
         }
 
         public async Task<BaseResponse<SignUpResponse>> SignUp(SignUpRequest request)
@@ -105,61 +96,50 @@ namespace auth.in2sport.application.Services.LoginServices
                     {
                         var user = await _loginRepository.GetByEmailAsync(request.Email!);
 
-                        if (user == null)
+                        if (user != null)
                         {
-                            var userEntity = new Users
-                            {
-                                Email = request.Email,
-                                Password = EncriptPasscode(request.Password!),
-                                Status = 1,
-                                TypeUser = request.TypeUser,
-                                FirstName = request.FirstName,
-                                SecondName = request.SecondName,
-                                FirstLastname = request.FirstLastname,
-                                SecondLastname = request.SecondLastname,
-                                TypeDocument = request.TypeDocument,
-                                DocumentNumber = request.DocumentNumber,
-                                PhoneNumber = request.PhoneNumber,
-                                Address = request.Address
-                            };
-
-                            var result = await _loginRepository.CreateAsync(userEntity);
-
-                            if (result)
-                            {
-                                await transaction.CommitAsync();
-
-                                response.StatusCode = 201;
-                                response.Message = "OK";
-                            }
-                            else
-                            {
-                                response.StatusCode = 401;
-                                response.Message = "Error al crear el usuario";
-                            }
+                            throw new CreateFailedException("El usuario ya existe");
                         }
-                        else
+                        var userEntity = new Users
                         {
-                            response.StatusCode = 400;
-                            response.Message = "El usuario ya existe";
+                            Email = request.Email,
+                            Password = EncriptPasscode(request.Password!),
+                            Status = 0,
+                            TypeUser = request.TypeUser,
+                            FirstName = request.FirstName,
+                            SecondName = request.SecondName,
+                            FirstLastname = request.FirstLastname,
+                            SecondLastname = request.SecondLastname,
+                            TypeDocument = request.TypeDocument,
+                            DocumentNumber = request.DocumentNumber,
+                            PhoneNumber = request.PhoneNumber,
+                            Address = request.Address
+                        };
+
+                        var result = await _loginRepository.CreateAsync(userEntity);
+
+                        if (!result)
+                        {
+                            throw new CreateFailedException("Error al crear el usuario");
                         }
+
+                        await transaction.CommitAsync();
+
+                        response.StatusCode = 201;
+                        response.Message = "OK";
+                        return response;
                     }
                     catch (Exception ex)
                     {
                         await transaction.RollbackAsync();
-
-                        response.StatusCode = 500;
-                        response.Message = $"Error durante la creación del usuario: {ex.Message}";
+                        throw new CreateFailedException($"Error durante la creación del usuario: {ex.Message}", 500);
                     }
                 }
             }
             catch (Exception ex)
             {
-                response.StatusCode = 500;
-                response.Message = $"Error general: {ex.Message}";
+                throw new LoginFailedException($"Error general: {ex.Message}", 500);
             }
-
-            return response;
         }
 
         #region Private Methods

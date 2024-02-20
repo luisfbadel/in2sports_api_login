@@ -1,17 +1,23 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace auth.in2sport.application.Services.UserServices.Response
+﻿namespace auth.in2sport.application.Services.UserServices.Response
 {
     public class UpdateFailedException : Exception
     {
-        public UpdateFailedException() : base() { }
+        public int StatusCode { get; }
 
-        public UpdateFailedException(string message) : base(message) { }
+        public UpdateFailedException() : base() 
+        {
+            StatusCode = 500;
+        }
 
-        public UpdateFailedException(string message, Exception innerException) : base(message, innerException) { }
+        public UpdateFailedException(string message, int statusCode = 500) : base( message) 
+        {
+            StatusCode = statusCode;
+        }
+
+        public UpdateFailedException(string message, Exception innerException, int statusCode = 500) : base(message, innerException) 
+        {
+            StatusCode = statusCode;
+        }
+
     }
 }

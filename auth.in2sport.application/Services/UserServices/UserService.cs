@@ -40,6 +40,7 @@ namespace auth.in2sport.application.Services.UserServices
         }
 
         #endregion
+
         public async Task<BaseResponse<List<UserResponse>>> GetUsers(int page, int pageSize)
         {
             var response = new BaseResponse<List<UserResponse>>();
@@ -60,9 +61,7 @@ namespace auth.in2sport.application.Services.UserServices
             catch (Exception ex)
             {
                 Console.WriteLine($"Error al obtener la lista de usuarios: {ex.Message}");
-
-                response.StatusCode = 500;
-                response.Message = "Error inesperado al obtener la lista de usuarios.";
+                throw new UserFailedException($"Error inesperado al obtener la lista de usuarios: {ex.Message}", 500);
             }
 
             return response;
@@ -85,39 +84,27 @@ namespace auth.in2sport.application.Services.UserServices
 
                         transaction.Commit();
 
-                        if (result)
+                        if (!result)
                         {
-                            response.StatusCode = 200;
-                            response.Message = "OK";
-                        }
-                        else
-                        {
-                            response.StatusCode = 400;
-                            response.Message = "Error al Activar";
-
-                            throw new UpdateFailedException("Ocurrió un error al activar el usuario.");
+                            throw new UpdateFailedException("Ocurrió un error al activar el usuario.", 400);
                         }
 
+                        response.StatusCode = 200;
+                        response.Message = "OK";
                         return response;
                     }
                     catch (Exception ex)
                     {
                         transaction.Rollback();
                         Console.WriteLine($"Error durante la activación del usuario: {ex.Message}");
-
-                        response.StatusCode = 500;
-                        response.Message = "Error inesperado al activar el usuario.";
-                        return response;
+                        throw new UpdateFailedException($"EError inesperado al inactivar el usuario: {ex.Message}", 500);
                     }
                 }
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Error de transacción: {ex.Message}");
-
-                response.StatusCode = 500;
-                response.Message = "Error inesperado durante la transacción.";
-                return response;
+                throw new UpdateFailedException($"Error inesperado durante la transacción: {ex.Message}", 500);
             }
         }
 
@@ -138,18 +125,13 @@ namespace auth.in2sport.application.Services.UserServices
 
                         transaction.Commit();
 
-                        if (result)
+                        if (!result)
                         {
-                            response.StatusCode = 200;
-                            response.Message = "OK";
+                            throw new UpdateFailedException("Ocurrió un error al inactivar el usuario.", 400);
                         }
-                        else
-                        {
-                            response.StatusCode = 400;
-                            response.Message = "Error al Inactivar";
 
-                            throw new UpdateFailedException("Ocurrió un error al inactivar el usuario.");
-                        }
+                        response.StatusCode = 200;
+                        response.Message = "OK";
 
                         return response;
                     }
@@ -157,20 +139,14 @@ namespace auth.in2sport.application.Services.UserServices
                     {
                         transaction.Rollback();
                         Console.WriteLine($"Error durante la inactivación del usuario: {ex.Message}");
-
-                        response.StatusCode = 500;
-                        response.Message = "Error inesperado al inactivar el usuario.";
-                        return response;
+                        throw new UpdateFailedException($"EError inesperado al inactivar el usuario: {ex.Message}", 500);
                     }
                 }
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Error de transacción: {ex.Message}");
-
-                response.StatusCode = 500;
-                response.Message = "Error inesperado durante la transacción.";
-                return response;
+                throw new UpdateFailedException($"Error inesperado durante la transacción: {ex.Message}", 500);
             }
         }
 
@@ -181,6 +157,12 @@ namespace auth.in2sport.application.Services.UserServices
                 try
                 {
                     var user = await _userRepository.GetByIdAsync(request.Id);
+
+                    if (user == null)
+                    {
+                        throw new UpdateFailedException("El usuario no existe", 400);
+                    }
+
                     _mapper.Map(request, user);
                     UpdateChangedProperties(user, request);
 
@@ -198,28 +180,13 @@ namespace auth.in2sport.application.Services.UserServices
                     }
                     else
                     {
-                        throw new UpdateFailedException("La actualización del usuario falló.");
+                        throw new UpdateFailedException("La actualización del usuario falló.", 400);
                     }
-                }
-                catch (UpdateFailedException ex)
-                {
-                    await transaction.RollbackAsync();
-                    var response = new BaseResponse<UserResponse>
-                    {
-                        StatusCode = 400,
-                        Message = $"Error al actualizar: {ex.Message}"
-                    };
-                    return response;
                 }
                 catch (Exception ex)
                 {
                     await transaction.RollbackAsync();
-                    var response = new BaseResponse<UserResponse>
-                    {
-                        StatusCode = 500,
-                        Message = $"Error inesperado: {ex.Message}"
-                    };
-                    return response;
+                    throw new UpdateFailedException($"Error al actualizar: {ex.Message}", 500);
                 }
             }
         }
@@ -244,5 +211,6 @@ namespace auth.in2sport.application.Services.UserServices
         }
 
         #endregion
+
     }
 }
