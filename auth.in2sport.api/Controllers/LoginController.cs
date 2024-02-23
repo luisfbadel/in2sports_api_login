@@ -44,7 +44,7 @@ namespace auth.in2sport.api.Controllers
 
         [Route("api/v1/login/signUp")]
         [HttpPost]
-        public async Task<IActionResult> SignUp( SignUpRequest request)
+        public async Task<IActionResult> SignUp(SignUpRequest request)
         {
             if (ModelState.IsValid)
             {

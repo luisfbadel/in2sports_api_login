@@ -2,6 +2,7 @@
 using auth.in2sport.application.Services.LoginServices.Response;
 using auth.in2sport.infrastructure.Repositories;
 using auth.in2sport.infrastructure.Repositories.Postgres.Entities;
+using AutoMapper;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
@@ -19,9 +20,11 @@ namespace auth.in2sport.application.Services.LoginServices
         /// <summary>
         ///  Instance of the Base Repository
         ///  Instance of the Condiguration
+        ///  Instance of the Base Mapper
         /// </summary>
         private readonly IBaseRepository<Users> _loginRepository;
         private readonly IConfiguration _config;
+        private readonly IMapper _mapper;
 
         #endregion
 
@@ -33,10 +36,11 @@ namespace auth.in2sport.application.Services.LoginServices
         /// <param name="loginRepository"></param>
         /// <param name="config"></param>
         /// <exception cref="ArgumentNullException"></exception>
-        public LoginService(IBaseRepository<Users> loginRepository, IConfiguration config)
+        public LoginService(IBaseRepository<Users> loginRepository, IConfiguration config, IMapper mapper)
         {
             _loginRepository = loginRepository ?? throw new ArgumentNullException(nameof(loginRepository));
             _config = config ?? throw new ArgumentNullException();
+            _mapper = mapper ?? throw new ArgumentNullException();
         }
 
         #endregion
@@ -56,7 +60,8 @@ namespace auth.in2sport.application.Services.LoginServices
                 }
                 try
                 {
-                    var token = Authorize(request);
+                    var token = Authorize(user);
+                    tokens.user = _mapper.Map<UserResponse>(user);
                     tokens.AuthToken = token;
 
                     byte[] hashedPassword = EncriptPasscode(request.Password!);
@@ -71,6 +76,7 @@ namespace auth.in2sport.application.Services.LoginServices
                     response.StatusCode = 200;
                     response.Message = "OK";
                     response.Data = tokens;
+                    
                     return response;
                 }
                 catch (Exception ex)
@@ -87,6 +93,7 @@ namespace auth.in2sport.application.Services.LoginServices
         public async Task<BaseResponse<SignUpResponse>> SignUp(SignUpRequest request)
         {
             var response = new BaseResponse<SignUpResponse>();
+            var tokens = new SignUpResponse();
 
             try
             {
@@ -125,8 +132,13 @@ namespace auth.in2sport.application.Services.LoginServices
 
                         await transaction.CommitAsync();
 
+                        var token = Authorize(userEntity);
+                        tokens.user = _mapper.Map<UserResponse>(userEntity);
+                        tokens.AuthToken = token;
+
                         response.StatusCode = 201;
                         response.Message = "OK";
+                        response.Data = tokens;
                         return response;
                     }
                     catch (Exception ex)
@@ -144,7 +156,7 @@ namespace auth.in2sport.application.Services.LoginServices
 
         #region Private Methods
 
-        private string Authorize(SignInRequest user)
+        private string Authorize(Users user)
         {
             try
             {

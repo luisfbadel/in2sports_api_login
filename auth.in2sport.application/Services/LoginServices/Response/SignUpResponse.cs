@@ -3,5 +3,7 @@
     public class SignUpResponse
     {
         public string? AuthToken { get; set; }
+
+        public UserResponse? user { get; set; }
     }
 }
