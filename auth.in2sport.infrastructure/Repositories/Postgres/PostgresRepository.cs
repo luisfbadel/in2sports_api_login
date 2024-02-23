@@ -26,6 +26,7 @@ namespace auth.in2sport.infrastructure.Repositories.Postgres
 
             this._dbContext = dbContext;
         }
+
         #endregion
 
         public async Task<bool> CreateAsync(TEntity entity)
