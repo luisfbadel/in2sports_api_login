@@ -9,5 +9,7 @@ namespace auth.in2sport.application.Services.UserServices
         Task<BaseResponse<UserResponse>> ActivateUser(Guid id);
         Task<BaseResponse<UserResponse>> InactivateUser(Guid id);
         Task<BaseResponse<UserResponse>> UpdateUser(UpdateUserRequest entity);
+        Task<BaseResponse<List<UserResponse>>> GetByFilterAsync(string filter);
+
     }
 }

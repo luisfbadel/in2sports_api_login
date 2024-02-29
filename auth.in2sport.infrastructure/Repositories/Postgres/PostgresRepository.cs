@@ -93,5 +93,13 @@ namespace auth.in2sport.infrastructure.Repositories.Postgres
         {
             return await _dbContext.Database.BeginTransactionAsync();
         }
+
+        public async Task<List<TEntity>> GetByFilterAsync(Expression<Func<TEntity, bool>> filter)
+        {
+            var results = await _dbContext.Set<TEntity>()
+                                 .Where(filter)
+                                 .ToListAsync();
+            return results;
+        }
     }
 }

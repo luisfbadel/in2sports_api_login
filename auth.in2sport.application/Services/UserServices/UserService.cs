@@ -57,14 +57,13 @@ namespace auth.in2sport.application.Services.UserServices
                 response.StatusCode = 200;
                 response.Message = "OK";
                 response.Data = usersPerPage;
+                return response;
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Error al obtener la lista de usuarios: {ex.Message}");
                 throw new UserFailedException($"Error inesperado al obtener la lista de usuarios: {ex.Message}", 500);
             }
-
-            return response;
         }
 
         public async Task<BaseResponse<UserResponse>> ActivateUser(Guid id)
@@ -188,6 +187,29 @@ namespace auth.in2sport.application.Services.UserServices
                     await transaction.RollbackAsync();
                     throw new UpdateFailedException($"Error al actualizar: {ex.Message}", 500);
                 }
+            }
+        }
+
+        public async Task<BaseResponse<List<UserResponse>>> GetByFilterAsync(string filter)
+        {
+            var response = new BaseResponse<List<UserResponse>>();
+
+            try
+            {
+                var users = await _userRepository.GetByFilterAsync(entity => entity.FirstName == filter);
+                var listUsers = users
+                    .Select(o => _mapper.Map<UserResponse>(o))
+                    .ToList();
+
+                response.StatusCode = 200;
+                response.Message = "OK";
+                response.Data = listUsers;
+                return response;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error al obtener la lista de usuarios: {ex.Message}");
+                throw new FailedException($"Error inesperado al obtener la lista de usuarios: {ex.Message}", 500);
             }
         }
 

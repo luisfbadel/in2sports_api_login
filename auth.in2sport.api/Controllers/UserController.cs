@@ -34,8 +34,11 @@ namespace auth.in2sport.api.Controllers
         [HttpGet]
         public async Task<IActionResult> GetAll(int page = 1, int pageSize = 30)
         {
-           var result = await _userService.GetUsers(page, pageSize);
-           return Ok(result);
+            if (ModelState.IsValid)
+            {
+                return Ok(await _userService.GetUsers(page, pageSize));
+            }
+            return BadRequest();
         }
 
         [Route("api/v1/user/update-user")]
@@ -68,6 +71,17 @@ namespace auth.in2sport.api.Controllers
             if (ModelState.IsValid)
             {
                 return Ok(await _userService.InactivateUser(id));
+            }
+            return BadRequest();
+        }
+
+        [Route("api/v1/user/get-by-filter")]
+        [HttpGet]
+        public async Task<IActionResult> GetByFilterAsync(string filter)
+        {
+            if (ModelState.IsValid)
+            {
+                return Ok(await _userService.GetByFilterAsync(filter));
             }
             return BadRequest();
         }
