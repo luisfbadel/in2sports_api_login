@@ -1,13 +1,11 @@
 ﻿using auth.in2sport.application.Services.LoginServices.Requests;
 using auth.in2sport.application.Services.LoginServices.Response;
 using auth.in2sport.infrastructure.Repositories;
-using auth.in2sport.infrastructure.Repositories.Postgres;
 using auth.in2sport.infrastructure.Repositories.Postgres.Entities;
+using AutoMapper;
 using Microsoft.Extensions.Configuration;
-using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
-using System.Net;
 using System.Security.Claims;
 using System.Text;
 using JwtRegisteredClaimNames = System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames;
@@ -16,101 +14,211 @@ namespace auth.in2sport.application.Services.LoginServices
 {
     public class LoginService : ILoginService
     {
+
+        #region Private Properties
+
+        /// <summary>
+        ///  Instance of the Base Repository
+        ///  Instance of the Condiguration
+        ///  Instance of the Base Mapper
+        /// </summary>
         private readonly IBaseRepository<Users> _loginRepository;
         private readonly IConfiguration _config;
+        private readonly IMapper _mapper;
 
-        public LoginService(IBaseRepository<Users> loginRepository, IConfiguration config)
+        #endregion
+
+        #region Constructor
+
+        /// <summary>
+        /// Defines constructor
+        /// </summary>
+        /// <param name="loginRepository"></param>
+        /// <param name="config"></param>
+        /// <exception cref="ArgumentNullException"></exception>
+        public LoginService(IBaseRepository<Users> loginRepository, IConfiguration config, IMapper mapper)
         {
             _loginRepository = loginRepository ?? throw new ArgumentNullException(nameof(loginRepository));
             _config = config ?? throw new ArgumentNullException();
+            _mapper = mapper ?? throw new ArgumentNullException();
         }
+
+        #endregion
 
         public async Task<BaseResponse<SignInResponse>> SignIn(SignInRequest request)
         {
-            var user = await _loginRepository.GetByEmailAsync(request.Email);
             var response = new BaseResponse<SignInResponse>();
             var tokens = new SignInResponse();
 
-            if (user != null)
+            try
             {
-                var jwt = _config.GetSection("jwt");
+                var user = await _loginRepository.GetByEmailAsync(request.Email!);
 
+                if (user == null)
+                {
+                    throw new LoginFailedException("El usuario no existe");
+                }
+                try
+                {
+                    var token = Authorize(user);
+                    tokens.user = _mapper.Map<UserResponse>(user);
+                    tokens.AuthToken = token;
+
+                    byte[] hashedPassword = EncriptPasscode(request.Password!);
+                    bool validatorPassword = user!.Password!.SequenceEqual(hashedPassword);
+
+                    if (!validatorPassword)
+                    {
+                        response.StatusCode = 401;
+                        response.Message = "Unauthorized";
+                        return response;
+                    }
+                    response.StatusCode = 200;
+                    response.Message = "OK";
+                    response.Data = tokens;
+                    
+                    return response;
+                }
+                catch (Exception ex)
+                {
+                    throw new LoginFailedException($"Error durante la autorización: {ex.Message}", 500);
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new LoginFailedException($"Error durante la obtención del usuario: {ex.Message}", 500);
+            }
+        }
+
+        public async Task<BaseResponse<SignUpResponse>> SignUp(SignUpRequest request)
+        {
+            var response = new BaseResponse<SignUpResponse>();
+            var tokens = new SignUpResponse();
+
+            try
+            {
+                using (var transaction = await _loginRepository.BeginTransactionAsync())
+                {
+                    try
+                    {
+                        var user = await _loginRepository.GetByEmailAsync(request.Email!);
+
+                        if (user != null)
+                        {
+                            throw new CreateFailedException("El usuario ya existe");
+                        }
+                        var userEntity = new Users
+                        {
+                            Email = request.Email,
+                            Password = EncriptPasscode(request.Password!),
+                            Status = 0,
+                            TypeUser = request.TypeUser,
+                            FirstName = request.FirstName,
+                            SecondName = request.SecondName,
+                            FirstLastname = request.FirstLastname,
+                            SecondLastname = request.SecondLastname,
+                            TypeDocument = request.TypeDocument,
+                            DocumentNumber = request.DocumentNumber,
+                            PhoneNumber = request.PhoneNumber,
+                            Address = request.Address
+                        };
+
+                        var result = await _loginRepository.CreateAsync(userEntity);
+
+                        if (!result)
+                        {
+                            throw new CreateFailedException("Error al crear el usuario");
+                        }
+
+                        await transaction.CommitAsync();
+
+                        var token = Authorize(userEntity);
+                        tokens.user = _mapper.Map<UserResponse>(userEntity);
+                        tokens.AuthToken = token;
+
+                        response.StatusCode = 201;
+                        response.Message = "OK";
+                        response.Data = tokens;
+                        return response;
+                    }
+                    catch (Exception ex)
+                    {
+                        await transaction.RollbackAsync();
+                        throw new CreateFailedException($"Error durante la creación del usuario: {ex.Message}", 500);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new LoginFailedException($"Error general: {ex.Message}", 500);
+            }
+        }
+
+        #region Private Methods
+
+        private string Authorize(Users user)
+        {
+            try
+            {
                 var claims = new[]
                 {
-
                     new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
                     new Claim(JwtRegisteredClaimNames.Iat, DateTime.UtcNow.ToString()),
-                    new Claim("usuario", user.Email)
-
+                    new Claim("usuario", user.Email!)
                 };
-     
-                var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]));
+
+                var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]!));
                 var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
                 var token = new JwtSecurityToken(
                                 _config["Jwt:Issuer"],
                                 _config["Jwt:Audience"],
-                                     claims,
+                                claims,
                                 expires: DateTime.Now.AddMinutes(60),
                                 signingCredentials: credentials);
 
-
-                byte[] hashedPassword = Encoding.Unicode.GetBytes(request.Password);
-
-                tokens.AuthToken = new JwtSecurityTokenHandler().WriteToken(token);
-
-                bool validatorPassword = user.Password.SequenceEqual(hashedPassword);
-
-                if (validatorPassword)
-                {
-                    response.StatusCode = 200;
-                    response.Message = "OK";
-                    response.Data = tokens;
-                }
-                else
-                {
-                    response.StatusCode = 401;
-                    response.Message = "Unauthorized";
-                }
+                return new JwtSecurityTokenHandler().WriteToken(token);
             }
-            else
+            catch (ArgumentNullException ex)
             {
-                response.StatusCode = 401;
-                response.Message = "Unauthorized";
+                Console.WriteLine($"Se produjo una excepción de argumento nulo: {ex.Message}");
+                throw;
             }
-            return response;
+            catch (ArgumentException ex)
+            {
+                Console.WriteLine($"Se produjo una excepción de argumento inválido: {ex.Message}");
+                throw;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Se produjo una excepción no manejada: {ex.Message}");
+                throw;
+            }
         }
-        public async Task<BaseResponse<SignUpResponse>> SignUp(SignUpRequest request)
+
+        private byte[] EncriptPasscode(string password)
         {
-            var user = await _loginRepository.GetByEmailAsync(request.Email);
-            var response = new BaseResponse<SignUpResponse>();
-
-            if (user == null)
+            try
             {
-                byte[] hashedPassword = Encoding.Unicode.GetBytes(request.Password);
-                var userEntity = new Users();
-                userEntity.Email = request.Email;
-                userEntity.Password = hashedPassword;
-                userEntity.status = 1;
-                var result = await _loginRepository.CreateAsync(userEntity);
-
-
-                if (result)
-                {
-                    response.StatusCode = 200;
-                    response.Message = "OK";
-                }
-                else
-                {
-                    response.StatusCode = 401;
-                    response.Message = "Unauthorized";
-                }
+                byte[] hashedPassword = Encoding.Unicode.GetBytes(password!);
+                return hashedPassword;
             }
-            else
+            catch (ArgumentNullException ex)
             {
-                response.StatusCode = 400;
-                response.Message = "El usuario ya existe";
+                Console.WriteLine($"Error: La cadena de contraseña es nula. {ex.Message}");
+                throw;
             }
-            return response;
+            catch (EncoderFallbackException ex)
+            {
+                Console.WriteLine($"Error: Problema con la codificación de caracteres. {ex.Message}");
+                throw;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error inesperado durante la encriptación de la contraseña. {ex.Message}");
+                throw;
+            }
         }
+
+        #endregion
     }
 }

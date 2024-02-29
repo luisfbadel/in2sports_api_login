@@ -1,14 +1,14 @@
-﻿using System.Numerics;
+﻿using System.ComponentModel.DataAnnotations;
 
-namespace auth.in2sport.infrastructure.Repositories.Postgres.Entities
+namespace auth.in2sport.application.Services.UserServices.Request
 {
-    public class Users : PostgresEntity
+    public class UpdateUserRequest
     {
+        [Required]
         public Guid Id { get; set; }
 
+        [EmailAddress]
         public string? Email { get; set; }
-
-        public byte[]? Password { get; set; }
 
         public string? TypeUser { get; set; }
 
@@ -27,7 +27,5 @@ namespace auth.in2sport.infrastructure.Repositories.Postgres.Entities
         public long? PhoneNumber { get; set; }
 
         public string? Address { get; set; }
-
-        public int Status { get; set; }
     }
 }

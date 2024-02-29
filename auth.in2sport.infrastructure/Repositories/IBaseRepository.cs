@@ -1,6 +1,5 @@
-﻿using System;
+﻿using Microsoft.EntityFrameworkCore.Storage;
 using System.Linq.Expressions;
-
 
 namespace auth.in2sport.infrastructure.Repositories
 {
@@ -13,5 +12,7 @@ namespace auth.in2sport.infrastructure.Repositories
         Task<TEntity> GetByIdAsync(Guid id);
         Task<TEntity> GetByEmailAsync(string email);
         Task<bool> DeleteAsync(object id);
+        Task<IDbContextTransaction> BeginTransactionAsync();
+        Task<List<TEntity>> GetByFilterAsync(Expression<Func<TEntity, bool>> filter);
     }
 }

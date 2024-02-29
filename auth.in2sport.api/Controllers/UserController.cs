@@ -1,11 +1,10 @@
-﻿using auth.in2sport.application.Services.LoginServices.Requests;
-using auth.in2sport.application.Services.UserServices;
-using auth.in2sport.infrastructure.Repositories.Postgres.Entities;
-using AutoMapper;
+﻿using auth.in2sport.application.Services.UserServices;
+using auth.in2sport.application.Services.UserServices.Request;
 using Microsoft.AspNetCore.Mvc;
 
 namespace auth.in2sport.api.Controllers
 {
+    [ApiController]
     public class UserController : Controller
     {
         #region Private Properties
@@ -31,13 +30,27 @@ namespace auth.in2sport.api.Controllers
 
         #endregion
 
-
         [Route("api/v1/user/get-all")]
         [HttpGet]
-        public async Task<IActionResult> getAll(int page = 1, int pageSize = 10)
+        public async Task<IActionResult> GetAll(int page = 1, int pageSize = 30)
         {
-           var result = await _userService.GetUsers(page, pageSize);
-           return Ok(result);
+            if (ModelState.IsValid)
+            {
+                return Ok(await _userService.GetUsers(page, pageSize));
+            }
+            return BadRequest();
+        }
+
+        [Route("api/v1/user/update-user")]
+        [HttpPatch]
+        public async Task<IActionResult> UpdateUser(UpdateUserRequest request)
+        {
+            if (ModelState.IsValid)
+            {
+                return Ok(await _userService.UpdateUser(request));
+            }
+            return BadRequest();
+
         }
 
         [Route("api/v1/user/activate-user")]
@@ -58,6 +71,17 @@ namespace auth.in2sport.api.Controllers
             if (ModelState.IsValid)
             {
                 return Ok(await _userService.InactivateUser(id));
+            }
+            return BadRequest();
+        }
+
+        [Route("api/v1/user/get-by-filter")]
+        [HttpGet]
+        public async Task<IActionResult> GetByFilterAsync(string filter)
+        {
+            if (ModelState.IsValid)
+            {
+                return Ok(await _userService.GetByFilterAsync(filter));
             }
             return BadRequest();
         }

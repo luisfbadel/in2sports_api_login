@@ -1,15 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Numerics;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.ComponentModel.DataAnnotations;
 
-namespace auth.in2sport.application.Services.LoginServices.Requests
+namespace auth.in2sport.application.Services.UserServices.Request
 {
-    public class SignUpRequest
+    public class CreateUserRequest
     {
+        [Required]
+        public Guid Id { get; set; }
+
         [Required]
         [EmailAddress]
         public string? Email { get; set; }
@@ -43,8 +40,5 @@ namespace auth.in2sport.application.Services.LoginServices.Requests
 
         [Required]
         public string? Address { get; set; }
-
-        public int? Status { get; set; }
-
     }
 }

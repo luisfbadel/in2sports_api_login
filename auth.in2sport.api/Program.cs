@@ -2,6 +2,7 @@ using auth.in2sport.application.Services.LoginServices;
 using auth.in2sport.application.Services.UserServices;
 using auth.in2sport.infrastructure.Repositories;
 using auth.in2sport.infrastructure.Repositories.Postgres;
+using Microsoft.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
@@ -19,6 +20,16 @@ builder.Services.AddTransient(typeof(IBaseRepository<>), typeof(PostgresReposito
 
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
+builder.Services.AddCors(Options =>
+{
+    Options.AddPolicy("ApiPolitics", app =>
+    {
+        app.AllowAnyOrigin()
+        .AllowAnyHeader() 
+        .AllowAnyMethod();
+    });
+});
+
 var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
@@ -26,6 +37,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 app.UseHttpsRedirection();
+app.UseCors("ApiPolitics");
 app.UseAuthorization();
 app.MapControllers();
 app.Run();

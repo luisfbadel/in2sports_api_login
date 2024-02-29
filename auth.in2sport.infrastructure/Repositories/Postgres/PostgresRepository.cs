@@ -1,5 +1,5 @@
-﻿using auth.in2sport.infrastructure.Repositories.Postgres.Entities;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using System.Linq.Expressions;
 
 namespace auth.in2sport.infrastructure.Repositories.Postgres
@@ -26,6 +26,7 @@ namespace auth.in2sport.infrastructure.Repositories.Postgres
 
             this._dbContext = dbContext;
         }
+
         #endregion
 
         public async Task<bool> CreateAsync(TEntity entity)
@@ -50,7 +51,7 @@ namespace auth.in2sport.infrastructure.Repositories.Postgres
         public async Task<TEntity> GetByIdAsync(Guid id)
         {
             var result = await _dbContext.Set<TEntity>().FindAsync(id);
-            return result;
+            return result!;
         }
 
         public async Task<TEntity> GetByEmailAsync(string email)
@@ -65,9 +66,9 @@ namespace auth.in2sport.infrastructure.Repositories.Postgres
 
             var entities = await _dbContext.Set<TEntity>().ToListAsync();
 
-            var result = entities.FirstOrDefault(u => emailProperty.GetValue(u) != null && emailProperty.GetValue(u).ToString() == email);
+            var result = entities.FirstOrDefault(u => emailProperty.GetValue(u) != null && emailProperty.GetValue(u)!.ToString() == email);
 
-            return result;
+            return result!;
         }
 
         public async Task<bool> UpdateAsync(TEntity entity)
@@ -86,6 +87,19 @@ namespace auth.in2sport.infrastructure.Repositories.Postgres
             _dbContext.Set<TEntity>().Remove(entityToDelete);
             var result = await _dbContext.SaveChangesAsync();
             return result > 0;
+        }
+
+        public async Task<IDbContextTransaction> BeginTransactionAsync()
+        {
+            return await _dbContext.Database.BeginTransactionAsync();
+        }
+
+        public async Task<List<TEntity>> GetByFilterAsync(Expression<Func<TEntity, bool>> filter)
+        {
+            var results = await _dbContext.Set<TEntity>()
+                                 .Where(filter)
+                                 .ToListAsync();
+            return results;
         }
     }
 }

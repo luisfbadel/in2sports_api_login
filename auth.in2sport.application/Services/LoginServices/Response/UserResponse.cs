@@ -1,14 +1,10 @@
-﻿using System.Numerics;
-
-namespace auth.in2sport.infrastructure.Repositories.Postgres.Entities
+﻿namespace auth.in2sport.application.Services.LoginServices.Response
 {
-    public class Users : PostgresEntity
+    public class UserResponse
     {
         public Guid Id { get; set; }
 
         public string? Email { get; set; }
-
-        public byte[]? Password { get; set; }
 
         public string? TypeUser { get; set; }
 
@@ -28,6 +24,6 @@ namespace auth.in2sport.infrastructure.Repositories.Postgres.Entities
 
         public string? Address { get; set; }
 
-        public int Status { get; set; }
+        public int status { get; set; }
     }
 }
