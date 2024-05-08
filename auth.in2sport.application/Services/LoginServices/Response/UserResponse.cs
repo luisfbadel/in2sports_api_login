@@ -6,7 +6,7 @@
 
         public string? Email { get; set; }
 
-        public string? TypeUser { get; set; }
+        public int? TypeUser { get; set; }
 
         public string? FirstName { get; set; }
 

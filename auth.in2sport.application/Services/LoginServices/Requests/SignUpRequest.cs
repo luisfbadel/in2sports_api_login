@@ -18,7 +18,7 @@ namespace auth.in2sport.application.Services.LoginServices.Requests
         public string? Password { get; set; }
 
         [Required]
-        public string? TypeUser { get; set; }
+        public int? TypeUser { get; set; }
 
         [Required]
         public string? FirstName { get; set; }

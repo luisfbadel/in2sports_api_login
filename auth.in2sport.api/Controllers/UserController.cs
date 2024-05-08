@@ -77,11 +77,45 @@ namespace auth.in2sport.api.Controllers
 
         [Route("api/v1/user/get-by-filter")]
         [HttpGet]
-        public async Task<IActionResult> GetByFilterAsync(string filter)
+        public async Task<IActionResult> GetByFilterAsync(string filter, Guid userId)
         {
             if (ModelState.IsValid)
             {
-                return Ok(await _userService.GetByFilterAsync(filter));
+                return Ok(await _userService.GetByFilterAsync(filter, userId));
+            }
+            return BadRequest();
+        }
+
+        [Route("api/v1/user/get-registered-users")]
+        [HttpGet]
+        public async Task<IActionResult> GetData(DateTime dateOne, DateTime dateTwo)
+        {
+            if (ModelState.IsValid)
+            {
+                return Ok(await _userService.GetDataRegisteredUsers(dateOne.ToUniversalTime(), dateTwo.ToUniversalTime()));
+            }
+            return BadRequest();
+        }
+
+
+        [Route("api/v1/user/get-users-status")]
+        [HttpGet]
+        public async Task<IActionResult> GetUsersStatus()
+        {
+            if (ModelState.IsValid)
+            {
+                return Ok(await _userService.GetUsersStatus());
+            }
+            return BadRequest();
+        }
+
+        [Route("api/v1/user/get-types-user")]
+        [HttpGet]
+        public async Task<IActionResult> GetTypesUser()
+        {
+            if (ModelState.IsValid)
+            {
+                return Ok(await _userService.GetTypesUser());
             }
             return BadRequest();
         }

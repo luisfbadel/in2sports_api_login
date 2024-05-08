@@ -10,7 +10,7 @@ namespace auth.in2sport.infrastructure.Repositories.Postgres.Entities
 
         public byte[]? Password { get; set; }
 
-        public string? TypeUser { get; set; }
+        public int? TypeUser { get; set; }
 
         public string? FirstName { get; set; }
 
@@ -29,5 +29,7 @@ namespace auth.in2sport.infrastructure.Repositories.Postgres.Entities
         public string? Address { get; set; }
 
         public int Status { get; set; }
+
+        public DateTime CreationDate { get; set; }
     }
 }

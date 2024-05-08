@@ -101,5 +101,40 @@ namespace auth.in2sport.infrastructure.Repositories.Postgres
                                  .ToListAsync();
             return results;
         }
+
+        public async Task<List<TEntity>> GetByTwoFilterAsync(Expression<Func<TEntity, bool>> filter, Expression<Func<TEntity, bool>> filter2)
+        {
+            var parameter = Expression.Parameter(typeof(TEntity), "e");
+
+            var combinedExpression = Expression.Lambda<Func<TEntity, bool>>(
+                Expression.AndAlso(
+                    Expression.Invoke(filter, parameter),
+                    Expression.Invoke(filter2, parameter)
+                ),
+                parameter
+            );
+            var results = await _dbContext.Set<TEntity>()
+                                 .Where(combinedExpression)
+                                 .ToListAsync();
+            return results;
+        }
+
+        public async Task<List<TEntity>> GetDataForMonthAndYearAsync(Expression<Func<TEntity, bool>> filter, Expression<Func<TEntity, bool>> filter2)
+        {
+            var parameter = Expression.Parameter(typeof(TEntity), "e");
+
+            var combinedExpression = Expression.Lambda<Func<TEntity, bool>>(
+                Expression.AndAlso(
+                    Expression.Invoke(filter, parameter),
+                    Expression.Invoke(filter2, parameter)
+                ),
+                parameter
+            );
+
+            var results = await _dbContext.Set<TEntity>()
+                       .Where(combinedExpression)
+                       .ToListAsync();
+            return results;
+        }
     }
 }

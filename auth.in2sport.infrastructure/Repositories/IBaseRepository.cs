@@ -14,5 +14,8 @@ namespace auth.in2sport.infrastructure.Repositories
         Task<bool> DeleteAsync(object id);
         Task<IDbContextTransaction> BeginTransactionAsync();
         Task<List<TEntity>> GetByFilterAsync(Expression<Func<TEntity, bool>> filter);
+        Task<List<TEntity>> GetByTwoFilterAsync(Expression<Func<TEntity, bool>> filter, Expression<Func<TEntity, bool>> filter2);
+        Task<List<TEntity>> GetDataForMonthAndYearAsync(Expression<Func<TEntity, bool>> filter, Expression<Func<TEntity, bool>> filter2);
+
     }
 }

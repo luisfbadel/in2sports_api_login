@@ -111,7 +111,7 @@ namespace auth.in2sport.application.Services.LoginServices
                         {
                             Email = request.Email,
                             Password = EncriptPasscode(request.Password!),
-                            Status = 0,
+                            Status = (int)request.Status,
                             TypeUser = request.TypeUser,
                             FirstName = request.FirstName,
                             SecondName = request.SecondName,
@@ -120,7 +120,8 @@ namespace auth.in2sport.application.Services.LoginServices
                             TypeDocument = request.TypeDocument,
                             DocumentNumber = request.DocumentNumber,
                             PhoneNumber = request.PhoneNumber,
-                            Address = request.Address
+                            Address = request.Address,
+                            CreationDate = DateTime.UtcNow.Date
                         };
 
                         var result = await _loginRepository.CreateAsync(userEntity);

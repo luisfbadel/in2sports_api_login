@@ -18,6 +18,7 @@ namespace auth.in2sport.application.Services.UserServices
         /// Instance of the Base Mapper
         /// </summary>
         private readonly IBaseRepository<Users> _userRepository;
+        private readonly IBaseRepository<TypeUser> _typeUserRepository;
         private readonly IConfiguration _config;
         private readonly IMapper _mapper;
 
@@ -32,9 +33,10 @@ namespace auth.in2sport.application.Services.UserServices
         /// <param name="config"></param>
         /// <param name="mapper"></param>
         /// <exception cref="ArgumentNullException"></exception>
-        public UserService(IBaseRepository<Users> userRepository, IConfiguration config, IMapper mapper)
+        public UserService(IBaseRepository<Users> userRepository, IBaseRepository<TypeUser> typeUserRepository, IConfiguration config, IMapper mapper)
         {
             _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
+            _typeUserRepository = typeUserRepository ?? throw new ArgumentNullException(nameof(typeUserRepository));
             _config = config ?? throw new ArgumentNullException();
             _mapper = mapper ?? throw new ArgumentNullException();
         }
@@ -190,13 +192,14 @@ namespace auth.in2sport.application.Services.UserServices
             }
         }
 
-        public async Task<BaseResponse<List<UserResponse>>> GetByFilterAsync(string filter)
+        public async Task<BaseResponse<List<UserResponse>>> GetByFilterAsync(string filter, Guid userId)
         {
             var response = new BaseResponse<List<UserResponse>>();
 
             try
             {
-                var users = await _userRepository.GetByFilterAsync(entity => entity.FirstName == filter);
+                var users = await _userRepository.GetByTwoFilterAsync
+                    (entity => entity.FirstName == filter, entity => entity.Id != userId);
                 var listUsers = users
                     .Select(o => _mapper.Map<UserResponse>(o))
                     .ToList();
@@ -212,6 +215,100 @@ namespace auth.in2sport.application.Services.UserServices
                 throw new FailedException($"Error inesperado al obtener la lista de usuarios: {ex.Message}", 500);
             }
         }
+
+        public async Task<BaseResponse<List<DataRegisteredeUsersResponse>>> GetDataRegisteredUsers(DateTime dateOne, DateTime dateTwo)
+        {
+            var response = new BaseResponse<List<DataRegisteredeUsersResponse>>();
+
+            try
+            {
+
+                var usersForMonth = await _userRepository.GetDataForMonthAndYearAsync
+                    (entity => entity.CreationDate >= dateOne, entity => entity.CreationDate <= dateTwo);
+
+                var allDates = Enumerable.Range(0, (dateTwo.Year - dateOne.Year) * 12 + dateTwo.Month - dateOne.Month + 1)
+                  .Select(m => new {
+                      Year = dateOne.AddMonths(m).Year,
+                      Month = dateOne.AddMonths(m).Month
+                  }).ToList();
+
+                var groupedData = allDates.GroupJoin(
+                    usersForMonth,
+                    date => new { date.Year, date.Month },
+                    user => new { user.CreationDate!.Year, user.CreationDate!.Month },
+                    (date, userGroup) => new DataRegisteredeUsersResponse
+                    {
+                        Month = date.Month,
+                        Year = date.Year,
+                        UsersRegister = userGroup.Count()
+                    })
+                .OrderBy(d => d.Year)
+                .ThenBy(d => d.Month)
+                .ToList();
+
+                response.StatusCode = 200;
+                response.Message = "OK";
+                response.Data = groupedData;
+                return response;
+
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error al obtener datos: {ex.Message}");
+                throw new FailedException($"Error inesperado al obtener datos: {ex.Message}", 500);
+            }
+        }
+
+        public async Task<BaseResponse<DataUsersStatusResponse>> GetUsersStatus()
+        {
+            var response = new BaseResponse<DataUsersStatusResponse>();
+
+            try
+            {
+                var userAll = await _userRepository.GetAsync();
+
+                var usersForStatus = await _userRepository.GetByFilterAsync(entity => entity.Status == 1);
+
+                var data = new DataUsersStatusResponse
+                {
+                    UsersActives = usersForStatus.Count(),
+                    UsersInactives = userAll.Count - usersForStatus.Count()
+                };
+
+                response.StatusCode = 200;
+                response.Message = "OK";
+                response.Data = data;
+                return response;
+
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error al obtener datos: {ex.Message}");
+                throw new FailedException($"Error inesperado al obtener datos: {ex.Message}", 500);
+            }
+        }
+
+        public async Task<BaseResponse<List<TypeUser>>> GetTypesUser()
+        {
+            var response = new BaseResponse<List<TypeUser>>();
+
+            try
+            {
+                var typesUser = await _typeUserRepository.GetAsync();
+
+                response.StatusCode = 200;
+                response.Message = "OK";
+                response.Data = typesUser;
+                return response;
+
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error al obtener datos: {ex.Message}");
+                throw new FailedException($"Error inesperado al obtener datos: {ex.Message}", 500);
+            }
+        }
+
 
         #region Private Methods
 
