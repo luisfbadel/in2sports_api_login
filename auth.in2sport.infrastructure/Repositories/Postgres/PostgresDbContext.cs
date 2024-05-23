@@ -42,7 +42,7 @@ namespace auth.in2sport.infrastructure.Repositories.Postgres
             builder.Property(u => u.PhoneNumber).HasColumnName("phone_number");
             builder.Property(u => u.Address).HasColumnName("address");
             builder.Property(u => u.CreationDate).HasColumnName("creation_date");
-
+            builder.Property(u => u.PasswordValidation).HasColumnName("password_validation");
         }
 
         private void ConfigureTypeUser(EntityTypeBuilder<TypeUser> builder)

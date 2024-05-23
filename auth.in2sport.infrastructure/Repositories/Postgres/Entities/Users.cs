@@ -31,5 +31,7 @@ namespace auth.in2sport.infrastructure.Repositories.Postgres.Entities
         public int Status { get; set; }
 
         public DateTime CreationDate { get; set; }
+
+        public int PasswordValidation {  get; set; }
     }
 }

@@ -6,7 +6,7 @@
 
         public string? Email { get; set; }
 
-        public string? TypeUser { get; set; }
+        public int? TypeUser { get; set; }
 
         public string? FirstName { get; set; }
 
@@ -25,5 +25,8 @@
         public string? Address { get; set; }
 
         public int status { get; set; }
+
+        public int PasswordValidation { get; set; }
+
     }
 }

@@ -64,8 +64,9 @@ namespace auth.in2sport.application.Services.LoginServices
                     tokens.user = _mapper.Map<UserResponse>(user);
                     tokens.AuthToken = token;
 
-                    byte[] hashedPassword = EncriptPasscode(request.Password!);
-                    bool validatorPassword = user!.Password!.SequenceEqual(hashedPassword);
+                    //byte[] hashedPassword = EncriptPasscode("k12345");
+                    byte[] dataBytes = Convert.FromBase64String(request.Password);
+                    bool validatorPassword = user!.Password!.SequenceEqual(dataBytes);
 
                     if (!validatorPassword)
                     {
@@ -121,7 +122,8 @@ namespace auth.in2sport.application.Services.LoginServices
                             DocumentNumber = request.DocumentNumber,
                             PhoneNumber = request.PhoneNumber,
                             Address = request.Address,
-                            CreationDate = DateTime.UtcNow.Date
+                            CreationDate = DateTime.UtcNow.Date,
+                            PasswordValidation = 0
                         };
 
                         var result = await _loginRepository.CreateAsync(userEntity);
@@ -152,6 +154,119 @@ namespace auth.in2sport.application.Services.LoginServices
             catch (Exception ex)
             {
                 throw new LoginFailedException($"Error general: {ex.Message}", 500);
+            }
+        }
+
+        public async Task<BaseResponse<string>> UserRegistration(List<SignUpRequest> request)
+        {
+            var response = new BaseResponse<string>();
+
+            try
+            {
+                using (var transaction = await _loginRepository.BeginTransactionAsync())
+                {
+                    try
+                    {
+                        foreach (var userRequest in request)
+                        {
+                            
+                            var user = await _loginRepository.GetByEmailAsync(userRequest.Email!);
+
+                            if (user != null)
+                            {
+                                throw new CreateFailedException("El usuario ya existe");
+                            }
+                            var userEntity = new Users
+                            {
+                                Email = userRequest.Email,
+                                Password = EncriptPasscode(userRequest.Password!),
+                                Status = (int)userRequest.Status,
+                                TypeUser = userRequest.TypeUser,
+                                FirstName = userRequest.FirstName,
+                                SecondName = userRequest.SecondName,
+                                FirstLastname = userRequest.FirstLastname,
+                                SecondLastname = userRequest.SecondLastname,
+                                TypeDocument = userRequest.TypeDocument,
+                                DocumentNumber = userRequest.DocumentNumber,
+                                PhoneNumber = userRequest.PhoneNumber,
+                                Address = userRequest.Address,
+                                CreationDate = DateTime.UtcNow.Date,
+                                PasswordValidation = 1
+                            };
+
+                            var result = await _loginRepository.CreateAsync(userEntity);
+
+                            if (!result)
+                            {
+                                throw new CreateFailedException("Error al crear el usuario");
+                            }
+                        }
+
+                        await transaction.CommitAsync();
+
+                        response.StatusCode = 201;
+                        response.Message = "OK";
+                        response.Data = "Registro exitoso";
+                        return response;
+                    }
+                    catch (Exception ex)
+                    {
+                        await transaction.RollbackAsync();
+                        throw new CreateFailedException($"Error durante la creación del usuario: {ex.Message}", 500);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new LoginFailedException($"Error general: {ex.Message}", 500);
+            }
+        }
+
+        public async Task<BaseResponse<SignInResponse>> UpdatePassword(Guid userId, string newPassword)
+        {
+            var response = new BaseResponse<SignInResponse>();
+            var userResponse = new SignInResponse();
+
+            try
+            {
+                var user = await _loginRepository.GetByIdAsync(userId);
+
+                if (user == null)
+                {
+                    throw new LoginFailedException("El usuario no existe");
+                }
+                try
+                {
+                    //byte[] hashedPassword = EncriptPasscode("k12345");
+                    byte[] dataBytes = Convert.FromBase64String(newPassword);
+
+                    user.Password = dataBytes;
+                    user.PasswordValidation = 0;
+                    user.CreationDate = DateTime.UtcNow.Date;
+
+                    var result = await _loginRepository.UpdateAsync(user);
+
+                    if (!result)
+                    {
+                        throw new LoginFailedException("El usuario no existe");
+                    }
+                    userResponse.user = _mapper.Map<UserResponse>(user);
+                    userResponse.AuthToken = "";
+
+                    response.StatusCode = 200;
+                    response.Message = "OK";
+                    response.Data = userResponse;
+
+                    return response;
+                }
+                catch (Exception ex)
+                {
+                    throw new LoginFailedException($"Error durante la actualizacion: {ex.Message}", 500);
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new LoginFailedException($"Error durante la actualizacion: {ex.Message}", 500);
             }
         }
 
@@ -200,7 +315,8 @@ namespace auth.in2sport.application.Services.LoginServices
         {
             try
             {
-                byte[] hashedPassword = Encoding.Unicode.GetBytes(password!);
+                byte[] hashedPassword = Encoding.UTF8.GetBytes(password!);
+
                 return hashedPassword;
             }
             catch (ArgumentNullException ex)

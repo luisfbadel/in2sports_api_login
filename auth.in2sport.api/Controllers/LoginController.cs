@@ -1,6 +1,7 @@
 ﻿using auth.in2sport.application.Services.LoginServices;
 using auth.in2sport.application.Services.LoginServices.Requests;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion.Internal;
 
 namespace auth.in2sport.api.Controllers
 {
@@ -49,6 +50,28 @@ namespace auth.in2sport.api.Controllers
             if (ModelState.IsValid)
             {
                 return Ok(await _loginService.SignUp(request));
+            }
+            else return BadRequest();
+        }
+
+        [Route("api/v1/login/user-registration")]
+        [HttpPost]
+        public async Task<IActionResult> UserRegisteation(List<SignUpRequest> request)
+        {
+            if (ModelState.IsValid)
+            {
+                return Ok(await _loginService.UserRegistration(request));
+            }
+            else return BadRequest();
+        }
+
+        [Route("api/v1/login/update-password")]
+        [HttpPatch]
+        public async Task<IActionResult> UpdatePassword(Guid userId, string newPassword)
+        {
+            if (ModelState.IsValid)
+            {
+                return Ok(await _loginService.UpdatePassword(userId, newPassword));
             }
             else return BadRequest();
         }

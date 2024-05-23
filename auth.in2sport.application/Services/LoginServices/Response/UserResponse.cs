@@ -25,5 +25,7 @@
         public string? Address { get; set; }
 
         public int status { get; set; }
+
+        public int PasswordValidation {  get; set; }
     }
 }

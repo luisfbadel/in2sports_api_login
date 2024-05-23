@@ -40,7 +40,10 @@ namespace auth.in2sport.application.AutoMapper
                     src => src.MapFrom(x => x.PhoneNumber))
                 .ForMember(
                     dest => dest.Address,
-                    src => src.MapFrom(x => x.Address));
+                    src => src.MapFrom(x => x.Address))
+                .ForMember(
+                    dest => dest.PasswordValidation,
+                    src => src.MapFrom(x => x.PasswordValidation));
 
         }
     }
