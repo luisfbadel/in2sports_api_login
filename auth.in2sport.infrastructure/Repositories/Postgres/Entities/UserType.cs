@@ -1,6 +1,6 @@
 ﻿namespace auth.in2sport.infrastructure.Repositories.Postgres.Entities
 {
-    public class TypeUser : PostgresEntity
+    public class UserType : PostgresEntity
     {
         public int Id { get; set; }
 

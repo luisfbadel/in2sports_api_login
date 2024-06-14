@@ -13,7 +13,9 @@ namespace auth.in2sport.application.Services.UserServices
         Task<BaseResponse<List<UserResponse>>> GetByFilterAsync(string filter, Guid userId);
         Task<BaseResponse<List<DataRegisteredeUsersResponse>>> GetDataRegisteredUsers(DateTime dateOne, DateTime dateTwo);
         Task<BaseResponse<DataUsersStatusResponse>> GetUsersStatus();
-        Task<BaseResponse<List<TypeUser>>> GetTypesUser();
+        Task<BaseResponse<List<UserType>>> GetTypesUser();
+        Task<BaseResponse<UserResponse>> Ticket(CreateTicketRequest entity);
+        Task<BaseResponse<bool>> GetValidationUser(string email);
 
     }
 }

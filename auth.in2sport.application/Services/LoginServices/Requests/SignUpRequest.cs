@@ -44,7 +44,13 @@ namespace auth.in2sport.application.Services.LoginServices.Requests
         [Required]
         public string? Address { get; set; }
 
+        [Required]
         public int? Status { get; set; }
 
+        [Required]
+        public int? PasswordValidation { get; set; }
+
+        [Required]
+        public int? Age { get; set; }
     }
 }

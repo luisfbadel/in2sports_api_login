@@ -27,5 +27,7 @@
         public int status { get; set; }
 
         public int PasswordValidation {  get; set; }
+
+        public int Age { get; set; }
     }
 }

@@ -33,5 +33,7 @@ namespace auth.in2sport.infrastructure.Repositories.Postgres.Entities
         public DateTime CreationDate { get; set; }
 
         public int PasswordValidation {  get; set; }
+
+        public int? Age { get; set; }
     }
 }

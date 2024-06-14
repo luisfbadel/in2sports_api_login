@@ -4,6 +4,9 @@ using auth.in2sport.infrastructure.Repositories;
 using Microsoft.Extensions.Configuration;
 using AutoMapper;
 using auth.in2sport.application.Services.UserServices.Request;
+using MimeKit;
+using System.Net.Mail;
+using MailKit.Security;
 
 namespace auth.in2sport.application.Services.UserServices
 {
@@ -18,7 +21,7 @@ namespace auth.in2sport.application.Services.UserServices
         /// Instance of the Base Mapper
         /// </summary>
         private readonly IBaseRepository<Users> _userRepository;
-        private readonly IBaseRepository<TypeUser> _typeUserRepository;
+        private readonly IBaseRepository<UserType> _typeUserRepository;
         private readonly IConfiguration _config;
         private readonly IMapper _mapper;
 
@@ -33,7 +36,7 @@ namespace auth.in2sport.application.Services.UserServices
         /// <param name="config"></param>
         /// <param name="mapper"></param>
         /// <exception cref="ArgumentNullException"></exception>
-        public UserService(IBaseRepository<Users> userRepository, IBaseRepository<TypeUser> typeUserRepository, IConfiguration config, IMapper mapper)
+        public UserService(IBaseRepository<Users> userRepository, IBaseRepository<UserType> typeUserRepository, IConfiguration config, IMapper mapper)
         {
             _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
             _typeUserRepository = typeUserRepository ?? throw new ArgumentNullException(nameof(typeUserRepository));
@@ -288,9 +291,9 @@ namespace auth.in2sport.application.Services.UserServices
             }
         }
 
-        public async Task<BaseResponse<List<TypeUser>>> GetTypesUser()
+        public async Task<BaseResponse<List<UserType>>> GetTypesUser()
         {
-            var response = new BaseResponse<List<TypeUser>>();
+            var response = new BaseResponse<List<UserType>>();
 
             try
             {
@@ -309,6 +312,58 @@ namespace auth.in2sport.application.Services.UserServices
             }
         }
 
+        public async Task<BaseResponse<UserResponse>> Ticket(CreateTicketRequest request)
+        {
+            var response = new BaseResponse<UserResponse>();
+
+            try
+            {
+                var user = await _userRepository.GetByIdAsync(request.UserId);
+
+                var result = await SendEmail(request, user);
+                if (!result)
+                {
+                    throw new UpdateFailedException("Error al enviar correo", 400);
+                }
+
+
+                response.StatusCode = 200;
+                response.Message = "OK";
+                return response;
+
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error al hacer ticket: {ex.Message}");
+                throw new FailedException($"Error inesperado al hacer ticket: {ex.Message}", 500);
+            }
+        }
+
+        public async Task<BaseResponse<bool>> GetValidationUser(string email)
+        {
+            var response = new BaseResponse<bool>();
+
+            try
+            {
+                var user = await _userRepository.GetByEmailAsync(email);
+                if (user != null)
+                {
+                    response.StatusCode = 200;
+                    response.Message = "OK";
+                    response.Data = true;
+                    return response;
+                }
+                response.StatusCode = 200;
+                response.Message = "OK";
+                response.Data = false;
+                return response;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error al obtener validacion: {ex.Message}");
+                throw new FailedException($"Error inesperado al obtener validacion: {ex.Message}", 500);
+            }
+        }
 
         #region Private Methods
 
@@ -325,6 +380,65 @@ namespace auth.in2sport.application.Services.UserServices
                 if (originalValue != null && !originalValue.Equals(requestValue))
                 {
                     originalUser.GetType().GetProperty(propertyName)?.SetValue(originalUser, requestValue);
+                }
+            }
+        }
+
+        public async Task<bool> SendEmail(CreateTicketRequest request, Users user)
+        {
+            var message = new MimeMessage();
+            message.From.Add(new MailboxAddress("In2sport", "gonsalez.carlos@live.com.mx"));
+            message.To.Add(new MailboxAddress("Carlos", "krlsoh1096@gmail.com"));
+            //message.To.Add(new MailboxAddress("Luis", "jemab2@hotmail.com"));
+
+            message.Subject = request.Tittle;
+
+            var bodyBuilder = new BodyBuilder();
+            bodyBuilder.HtmlBody = $@"
+            <html>
+            <body>
+                <p>Nombre de usuario: {user.FirstName} {user.SecondName} {user.FirstLastname} {user.SecondLastname}</p> 
+                <p>Email: {user.Email}</p>
+                <p>Desripción de ticket: </p>
+                <p>{request.Description}</p>
+            </body>
+            </html>";
+
+            message.Body = bodyBuilder.ToMessageBody();
+            //message.Body = new TextPart("plain")
+            //{
+            //    Text = request.Description
+            //};
+            using (var client = new MailKit.Net.Smtp.SmtpClient())
+            {
+                try
+                {
+                    await client.ConnectAsync("smtp.office365.com", 587, SecureSocketOptions.StartTls);
+
+                    // Autenticar con el servidor SMTP
+                    await client.AuthenticateAsync("gonsalez.carlos@live.com.mx", "Jashuarr0103");
+
+                    // Enviar el correo
+                    await client.SendAsync(message);
+
+                    // Desconectar del servidor SMTP
+                    await client.DisconnectAsync(true);
+
+                    // Retornar true si el envío es exitoso
+                    return true;
+                }
+                catch (Exception ex)
+                {
+                    // Opcional: Registrar el error
+                    Console.WriteLine($"An error occurred: {ex.Message}");
+
+                    // Retornar false si ocurre un error
+                    return false;
+                }
+                finally
+                {
+                    // Asegurarse de liberar los recursos del cliente SMTP
+                    client.Dispose();
                 }
             }
         }

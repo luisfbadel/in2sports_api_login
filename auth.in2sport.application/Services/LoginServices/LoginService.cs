@@ -123,7 +123,8 @@ namespace auth.in2sport.application.Services.LoginServices
                             PhoneNumber = request.PhoneNumber,
                             Address = request.Address,
                             CreationDate = DateTime.UtcNow.Date,
-                            PasswordValidation = 0
+                            PasswordValidation = (int)request.PasswordValidation,
+                            Age = (int)request.Age
                         };
 
                         var result = await _loginRepository.CreateAsync(userEntity);
@@ -172,33 +173,33 @@ namespace auth.in2sport.application.Services.LoginServices
                             
                             var user = await _loginRepository.GetByEmailAsync(userRequest.Email!);
 
-                            if (user != null)
+                            if (user == null)
                             {
-                                throw new CreateFailedException("El usuario ya existe");
-                            }
-                            var userEntity = new Users
-                            {
-                                Email = userRequest.Email,
-                                Password = EncriptPasscode(userRequest.Password!),
-                                Status = (int)userRequest.Status,
-                                TypeUser = userRequest.TypeUser,
-                                FirstName = userRequest.FirstName,
-                                SecondName = userRequest.SecondName,
-                                FirstLastname = userRequest.FirstLastname,
-                                SecondLastname = userRequest.SecondLastname,
-                                TypeDocument = userRequest.TypeDocument,
-                                DocumentNumber = userRequest.DocumentNumber,
-                                PhoneNumber = userRequest.PhoneNumber,
-                                Address = userRequest.Address,
-                                CreationDate = DateTime.UtcNow.Date,
-                                PasswordValidation = 1
-                            };
+                                var userEntity = new Users
+                                {
+                                    Email = userRequest.Email,
+                                    Password = EncriptPasscode(userRequest.Password!),
+                                    Status = (int)userRequest.Status,
+                                    TypeUser = userRequest.TypeUser,
+                                    FirstName = userRequest.FirstName,
+                                    SecondName = userRequest.SecondName,
+                                    FirstLastname = userRequest.FirstLastname,
+                                    SecondLastname = userRequest.SecondLastname,
+                                    TypeDocument = userRequest.TypeDocument,
+                                    DocumentNumber = userRequest.DocumentNumber,
+                                    PhoneNumber = userRequest.PhoneNumber,
+                                    Address = userRequest.Address,
+                                    CreationDate = DateTime.UtcNow.Date,
+                                    PasswordValidation = (int)userRequest.PasswordValidation,
+                                    Age = (int)userRequest.Age
+                                };
 
-                            var result = await _loginRepository.CreateAsync(userEntity);
+                                var result = await _loginRepository.CreateAsync(userEntity);
 
-                            if (!result)
-                            {
-                                throw new CreateFailedException("Error al crear el usuario");
+                                if (!result)
+                                {
+                                    throw new CreateFailedException("Error al crear el usuario");
+                                }
                             }
                         }
 

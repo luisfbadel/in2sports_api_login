@@ -12,7 +12,7 @@ namespace auth.in2sport.infrastructure.Repositories.Postgres
         }
 
         public DbSet<Users> Users { get; set; }
-        public DbSet<TypeUser> TypeUser { get; set; }
+        public DbSet<UserType> TypeUser { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -20,13 +20,13 @@ namespace auth.in2sport.infrastructure.Repositories.Postgres
             modelBuilder.Entity<Users>().HasKey(u => u.Id);
             modelBuilder.Entity<Users>(ConfigureUser);
 
-            modelBuilder.Entity<TypeUser>().HasKey(u => u.Id);
-            modelBuilder.Entity<TypeUser>(ConfigureTypeUser);
+            modelBuilder.Entity<UserType>().HasKey(u => u.Id);
+            modelBuilder.Entity<UserType>(ConfigureTypeUser);
         }
 
         private void ConfigureUser(EntityTypeBuilder<Users> builder)
         {
-            builder.ToTable("Users");
+            builder.ToTable("users");
 
             builder.Property(u => u.Id).HasColumnName("id");
             builder.Property(u => u.Email).HasColumnName("email");
@@ -43,11 +43,12 @@ namespace auth.in2sport.infrastructure.Repositories.Postgres
             builder.Property(u => u.Address).HasColumnName("address");
             builder.Property(u => u.CreationDate).HasColumnName("creation_date");
             builder.Property(u => u.PasswordValidation).HasColumnName("password_validation");
+            builder.Property(u => u.Age).HasColumnName("age");
         }
 
-        private void ConfigureTypeUser(EntityTypeBuilder<TypeUser> builder)
+        private void ConfigureTypeUser(EntityTypeBuilder<UserType> builder)
         {
-            builder.ToTable("TypeUser");
+            builder.ToTable("user_type");
 
             builder.Property(u => u.Id).HasColumnName("id");
             builder.Property(u => u.DescriptionType).HasColumnName("description_type");

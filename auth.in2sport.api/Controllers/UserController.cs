@@ -119,5 +119,28 @@ namespace auth.in2sport.api.Controllers
             }
             return BadRequest();
         }
+
+        [Route("api/v1/user/ticket")]
+        [HttpPost]
+        public async Task<IActionResult> Ticket(CreateTicketRequest request)
+        {
+            if (ModelState.IsValid)
+            {
+                return Ok(await _userService.Ticket(request));
+            }
+            return BadRequest();
+        }
+
+        [Route("api/v1/user/get-validation-user")]
+        [HttpGet]
+        public async Task<IActionResult> GetValidationUser(string email)
+        {
+            if (ModelState.IsValid)
+            {
+                return Ok(await _userService.GetValidationUser(email));
+            }
+            return BadRequest();
+        }
+
     }
 }
