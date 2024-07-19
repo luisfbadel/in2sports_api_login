@@ -5,8 +5,14 @@ using Microsoft.Extensions.Configuration;
 using AutoMapper;
 using auth.in2sport.application.Services.UserServices.Request;
 using MimeKit;
-using System.Net.Mail;
 using MailKit.Security;
+using MercadoPago.Config;
+using MercadoPago.Client.Preference;
+using MercadoPago.Resource.Preference;
+using MercadoPago.Client.Payment;
+using MercadoPago.Resource.User;
+using MercadoPago.Resource.Payment;
+using System.Text.Json;
 
 namespace auth.in2sport.application.Services.UserServices
 {
@@ -21,7 +27,8 @@ namespace auth.in2sport.application.Services.UserServices
         /// Instance of the Base Mapper
         /// </summary>
         private readonly IBaseRepository<Users> _userRepository;
-        private readonly IBaseRepository<UserType> _typeUserRepository;
+        private readonly IBaseRepository<UserSubscription> _userSubscriptionRepository;
+        private readonly IBaseRepository<UserType> _typeUserRepository; 
         private readonly IConfiguration _config;
         private readonly IMapper _mapper;
 
@@ -36,10 +43,11 @@ namespace auth.in2sport.application.Services.UserServices
         /// <param name="config"></param>
         /// <param name="mapper"></param>
         /// <exception cref="ArgumentNullException"></exception>
-        public UserService(IBaseRepository<Users> userRepository, IBaseRepository<UserType> typeUserRepository, IConfiguration config, IMapper mapper)
+        public UserService(IBaseRepository<Users> userRepository, IBaseRepository<UserType> typeUserRepository, IBaseRepository<UserSubscription> userSubscriptionRepository, IConfiguration config, IMapper mapper)
         {
             _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
             _typeUserRepository = typeUserRepository ?? throw new ArgumentNullException(nameof(typeUserRepository));
+            _userSubscriptionRepository = userSubscriptionRepository ?? throw new ArgumentNullException(nameof(userSubscriptionRepository));
             _config = config ?? throw new ArgumentNullException();
             _mapper = mapper ?? throw new ArgumentNullException();
         }
@@ -362,6 +370,238 @@ namespace auth.in2sport.application.Services.UserServices
             {
                 Console.WriteLine($"Error al obtener validacion: {ex.Message}");
                 throw new FailedException($"Error inesperado al obtener validacion: {ex.Message}", 500);
+            }
+        }
+
+        public async Task<BaseResponse<dynamic>> CreatePreference(PreferenceDtoRequest request)
+        {
+            var response = new BaseResponse<dynamic>();
+
+            try
+            {
+                MercadoPagoConfig.AccessToken = _config["AccessToken"];
+                var preferenceRequest = new PreferenceRequest
+                {
+                    Items = new List<PreferenceItemRequest>
+                    {
+                        new PreferenceItemRequest
+                        {
+                            Title = request.Title,
+                            Quantity = request.Quantity,
+                            UnitPrice = request.Price
+                        }
+                    },
+                    BackUrls = new PreferenceBackUrlsRequest
+                    {
+                        Success = "http://localhost:59624/#/dashboard/course-subscription",
+                        Failure = "http://localhost:59624/#/dashboard/course-subscription",
+                        Pending = "http://localhost:59624/#/dashboard/course-subscription"
+                    },
+                    
+                    Metadata = new Dictionary<string, object>
+                    {
+                        { "user_id", request.UserId.ToString() },
+                        { "course_id", request.CourseId.ToString() },
+
+                    },
+                    AutoReturn = "approved",
+                    NotificationUrl = "https://11be-191-108-172-207.ngrok-free.app/api/v1/user/notifications_mercadopago"
+                };
+
+                var client = new PreferenceClient();
+                Preference preference = await client.CreateAsync(preferenceRequest);
+
+                response.StatusCode = 200;
+                response.Message = "OK";
+                response.Data = new
+                {
+                    id = preference.Id,
+                    init_point = preference.InitPoint,
+                    sandbox_init_point = preference.SandboxInitPoint
+                };
+                return response;
+
+
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error al hacer pago: {ex.Message}");
+                throw new FailedException($"Error inesperado al hacer pago: {ex.Message}", 500);
+            }
+        }
+
+        public async Task<BaseResponse<dynamic>> CreatePreferenceLeague(PreferenceLeagueDtoRequest request)
+        {
+            var response = new BaseResponse<dynamic>();
+
+            try
+            {
+                MercadoPagoConfig.AccessToken = _config["AccessToken"];
+                var preferenceRequest = new PreferenceRequest
+                {
+                    Items = new List<PreferenceItemRequest>
+                    {
+                        new PreferenceItemRequest
+                        {
+                            Title = request.Title,
+                            Quantity = request.Quantity,
+                            UnitPrice = request.Price
+                        }
+                    },
+                    BackUrls = new PreferenceBackUrlsRequest
+                    {
+                        Success = "http://localhost:49744/#/dashboard",
+                        Failure = "http://localhost:49744/#/dashboard",
+                        Pending = "http://localhost:49744/#/dashboard"
+                    },
+                    Metadata = new Dictionary<string, object>
+                    {
+                        { "league_users", JsonSerializer.Serialize(request.Data) },
+                    },
+                    AutoReturn = "approved",
+                    NotificationUrl = "https://11be-191-108-172-207.ngrok-free.app/api/v1/user/notifications_mercadopago_league"
+                };
+
+                var client = new PreferenceClient();
+                Preference preference = await client.CreateAsync(preferenceRequest);
+
+                response.StatusCode = 200;
+                response.Message = "OK";
+                response.Data = new
+                {
+                    id = preference.Id,
+                    init_point = preference.InitPoint,
+                    sandbox_init_point = preference.SandboxInitPoint
+                };
+                return response;
+
+
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error al hacer pago: {ex.Message}");
+                throw new FailedException($"Error inesperado al hacer pago: {ex.Message}", 500);
+            }
+        }
+
+        public async Task<BaseResponse<dynamic>> NotificationsMercadopago(NotificationRequest request)
+        {
+            var response = new BaseResponse<dynamic>();
+
+            try
+            {
+                MercadoPagoConfig.AccessToken = _config["AccessToken"];
+
+                if (request.Type == "payment" && (request.Action == "payment.created" || request.Action == "payment.updated"))
+                {
+                    var client = new PaymentClient();
+                    var payment = await client.GetAsync(long.Parse(request.Data.Id));
+
+                    if (payment.Status == "approved")
+                    {
+                        Guid userId = Guid.Parse(payment.Metadata["user_id"].ToString());
+                        Guid courseId = Guid.Parse(payment.Metadata["course_id"].ToString());
+
+                        var validationSubsctiption = await _userSubscriptionRepository.GetByTwoFilterAsync
+                                    (entity => entity.UserId == userId, entity => entity.CourseId == courseId);
+
+                        DateTime utcNow = DateTime.UtcNow;
+                        DateTime localDate = utcNow.AddHours(+5).Date;
+
+                        if (validationSubsctiption.Count > 0)
+                        {
+                            UserSubscription subscription = validationSubsctiption[0];
+
+                            subscription.MonthsSubscribed = subscription.MonthsSubscribed + 1;
+                            subscription.LastDate = localDate;
+
+                            var result = await _userSubscriptionRepository.UpdateAsync(subscription);
+                        }
+                        else
+                        {
+                            UserSubscription subscription = new UserSubscription
+                            {
+                                UserId = userId,
+                                CourseId = courseId,
+                                MonthsSubscribed = 1,
+                                LastDate = localDate
+                            };
+                            var result = await _userSubscriptionRepository.CreateAsync(subscription);
+                        }
+                           
+                    }
+                }
+
+                response.StatusCode = 200;
+                response.Message = "OK";
+                return response;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error al hacer ticket: {ex.Message}");
+                throw new FailedException($"Error inesperado al hacer ticket: {ex.Message}", 500);
+            }
+        }
+
+        public async Task<BaseResponse<dynamic>> NotificationsMercadopagoLeague(NotificationRequest request)
+        {
+            var response = new BaseResponse<dynamic>();
+
+            try
+            {
+                MercadoPagoConfig.AccessToken = _config["AccessToken"];
+
+                if (request.Type == "payment" && (request.Action == "payment.created" || request.Action == "payment.updated"))
+                {
+                    var client = new PaymentClient();
+                    var payment = await client.GetAsync(long.Parse(request.Data.Id));
+
+                    if (payment.Status == "approved")
+                    {
+                        List<LeagueUser> leagueUsers = JsonSerializer.Deserialize<List<LeagueUser>>(payment.Metadata["league_users"].ToString());
+                        foreach (var item in leagueUsers!)
+                        {
+                            foreach (var course in item.Courses!)
+                            {
+                                var validationSubsctiption = await _userSubscriptionRepository.GetByTwoFilterAsync
+                                   (entity => entity.UserId == item.User!.Id, entity => entity.CourseId == Guid.Parse(course));
+
+                                DateTime utcNow = DateTime.UtcNow;
+                                DateTime localDate = utcNow.AddHours(+5).Date;
+
+                                if (validationSubsctiption.Count > 0)
+                                {
+                                    UserSubscription subscription = validationSubsctiption[0];
+
+                                    subscription.MonthsSubscribed = subscription.MonthsSubscribed + 1;
+                                    subscription.LastDate = localDate;
+
+                                    var result = await _userSubscriptionRepository.UpdateAsync(subscription);
+                                }
+                                else
+                                {
+                                    UserSubscription subscription = new UserSubscription
+                                    {
+                                        UserId = item.User!.Id,
+                                        CourseId = Guid.Parse(course),
+                                        MonthsSubscribed = 1,
+                                        LastDate = localDate
+                                    };
+                                    var result = await _userSubscriptionRepository.CreateAsync(subscription);
+                                }
+                            }    
+                        }
+                    }
+                }
+
+                response.StatusCode = 200;
+                response.Message = "OK";
+                return response;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error al hacer ticket: {ex.Message}");
+                throw new FailedException($"Error inesperado al hacer ticket: {ex.Message}", 500);
             }
         }
 

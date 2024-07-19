@@ -15,6 +15,10 @@ namespace auth.in2sport.application.Services.UserServices
         Task<BaseResponse<DataUsersStatusResponse>> GetUsersStatus();
         Task<BaseResponse<List<UserType>>> GetTypesUser();
         Task<BaseResponse<UserResponse>> Ticket(CreateTicketRequest entity);
+        Task<BaseResponse<dynamic>> CreatePreference(PreferenceDtoRequest entity);
+        Task<BaseResponse<dynamic>> CreatePreferenceLeague(PreferenceLeagueDtoRequest entity);
+        Task<BaseResponse<dynamic>> NotificationsMercadopago(NotificationRequest entity);
+        Task<BaseResponse<dynamic>> NotificationsMercadopagoLeague(NotificationRequest entity);
         Task<BaseResponse<bool>> GetValidationUser(string email);
 
     }

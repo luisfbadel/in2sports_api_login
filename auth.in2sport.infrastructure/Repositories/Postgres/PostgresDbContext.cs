@@ -13,6 +13,7 @@ namespace auth.in2sport.infrastructure.Repositories.Postgres
 
         public DbSet<Users> Users { get; set; }
         public DbSet<UserType> TypeUser { get; set; }
+        public DbSet<UserSubscription> UserSubscription { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -22,6 +23,9 @@ namespace auth.in2sport.infrastructure.Repositories.Postgres
 
             modelBuilder.Entity<UserType>().HasKey(u => u.Id);
             modelBuilder.Entity<UserType>(ConfigureTypeUser);
+
+            modelBuilder.Entity<UserSubscription>().HasKey(u => u.Id);
+            modelBuilder.Entity<UserSubscription>(ConfigureUserSubscription);
         }
 
         private void ConfigureUser(EntityTypeBuilder<Users> builder)
@@ -53,6 +57,17 @@ namespace auth.in2sport.infrastructure.Repositories.Postgres
             builder.Property(u => u.Id).HasColumnName("id");
             builder.Property(u => u.DescriptionType).HasColumnName("description_type");
             builder.Property(u => u.Status).HasColumnName("status");
+        }
+
+        private void ConfigureUserSubscription(EntityTypeBuilder<UserSubscription> builder)
+        {
+            builder.ToTable("user_subscription");
+
+            builder.Property(u => u.Id).HasColumnName("id");
+            builder.Property(u => u.UserId).HasColumnName("user_id");
+            builder.Property(u => u.CourseId).HasColumnName("course_id");
+            builder.Property(u => u.MonthsSubscribed).HasColumnName("months_subscribed");
+            builder.Property(u => u.LastDate).HasColumnName("last_date");
 
         }
     }

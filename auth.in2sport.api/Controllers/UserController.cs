@@ -142,5 +142,49 @@ namespace auth.in2sport.api.Controllers
             return BadRequest();
         }
 
+
+        [Route("api/v1/user/create_preference")]
+        [HttpPost]
+        public async Task<IActionResult> CreatePreference(PreferenceDtoRequest request)
+        {
+            if (ModelState.IsValid)
+            {
+                return Ok(await _userService.CreatePreference(request));
+            }
+            return BadRequest();
+        }
+
+        [Route("api/v1/user/create_preference_league")]
+        [HttpPost]
+        public async Task<IActionResult> CreatePreferenceLeague(PreferenceLeagueDtoRequest request)
+        {
+            if (ModelState.IsValid)
+            {
+                return Ok(await _userService.CreatePreferenceLeague(request));
+            }
+            return BadRequest();
+        }
+
+        [Route("api/v1/user/notifications_mercadopago")]
+        [HttpPost]
+        public async Task<IActionResult> NotificationsMercadopago(NotificationRequest request)
+        {
+            if (ModelState.IsValid)
+            {
+                return Ok(await _userService.NotificationsMercadopago(request));
+            }
+            return BadRequest();
+        }
+
+        [Route("api/v1/user/notifications_mercadopago_league")]
+        [HttpPost]
+        public async Task<IActionResult> NotificationsMercadopagoLeague(NotificationRequest request)
+        {
+            if (ModelState.IsValid)
+            {
+                return Ok(await _userService.NotificationsMercadopagoLeague(request));
+            }
+            return BadRequest();
+        }
     }
 }
