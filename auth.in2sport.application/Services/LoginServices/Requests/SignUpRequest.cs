@@ -51,6 +51,6 @@ namespace auth.in2sport.application.Services.LoginServices.Requests
         public int? PasswordValidation { get; set; }
 
         [Required]
-        public int? Age { get; set; }
+        public DateTime Birthdate { get; set; }
     }
 }

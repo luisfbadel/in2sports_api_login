@@ -42,9 +42,12 @@ namespace auth.in2sport.application.AutoMapper
                 .ForMember(
                     dest => dest.Address,
                     src => src.MapFrom(x => x.Address))
-                  .ForMember(
+                .ForMember(
                     dest => dest.Status,
-                    src => src.MapFrom(x => x.Status));
+                    src => src.MapFrom(x => x.Status))
+                .ForMember(
+                    dest => dest.Birthdate,
+                    src => src.MapFrom(x => x.Birthdate));
         }
     }
 }

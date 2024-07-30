@@ -28,7 +28,7 @@
 
         public int PasswordValidation { get; set; }
 
-        public int Age { get; set; }
+        public DateTime Birthdate { get; set; }
 
     }
 }

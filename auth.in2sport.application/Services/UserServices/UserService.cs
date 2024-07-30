@@ -28,7 +28,8 @@ namespace auth.in2sport.application.Services.UserServices
         /// </summary>
         private readonly IBaseRepository<Users> _userRepository;
         private readonly IBaseRepository<UserSubscription> _userSubscriptionRepository;
-        private readonly IBaseRepository<UserType> _typeUserRepository; 
+        private readonly IBaseRepository<UserType> _userTypeRepository;
+        private readonly IBaseRepository<AgeRange> _ageRangeRepository;
         private readonly IConfiguration _config;
         private readonly IMapper _mapper;
 
@@ -43,11 +44,12 @@ namespace auth.in2sport.application.Services.UserServices
         /// <param name="config"></param>
         /// <param name="mapper"></param>
         /// <exception cref="ArgumentNullException"></exception>
-        public UserService(IBaseRepository<Users> userRepository, IBaseRepository<UserType> typeUserRepository, IBaseRepository<UserSubscription> userSubscriptionRepository, IConfiguration config, IMapper mapper)
+        public UserService(IBaseRepository<Users> userRepository, IBaseRepository<UserType> userTypeRepository, IBaseRepository<UserSubscription> userSubscriptionRepository, IBaseRepository<AgeRange> ageRangeReposirity,IConfiguration config, IMapper mapper)
         {
             _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
-            _typeUserRepository = typeUserRepository ?? throw new ArgumentNullException(nameof(typeUserRepository));
+            _userTypeRepository = userTypeRepository ?? throw new ArgumentNullException(nameof(userTypeRepository));
             _userSubscriptionRepository = userSubscriptionRepository ?? throw new ArgumentNullException(nameof(userSubscriptionRepository));
+            _ageRangeRepository = ageRangeReposirity ?? throw new ArgumentNullException(nameof(ageRangeReposirity));
             _config = config ?? throw new ArgumentNullException();
             _mapper = mapper ?? throw new ArgumentNullException();
         }
@@ -299,17 +301,38 @@ namespace auth.in2sport.application.Services.UserServices
             }
         }
 
-        public async Task<BaseResponse<List<UserType>>> GetTypesUser()
+        public async Task<BaseResponse<List<UserType>>> GetUseTypes()
         {
             var response = new BaseResponse<List<UserType>>();
 
             try
             {
-                var typesUser = await _typeUserRepository.GetAsync();
+                var typesUser = await _userTypeRepository.GetAsync();
 
                 response.StatusCode = 200;
                 response.Message = "OK";
                 response.Data = typesUser;
+                return response;
+
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error al obtener datos: {ex.Message}");
+                throw new FailedException($"Error inesperado al obtener datos: {ex.Message}", 500);
+            }
+        }
+
+        public async Task<BaseResponse<List<AgeRange>>> GetAgeRange()
+        {
+            var response = new BaseResponse<List<AgeRange>>();
+
+            try
+            {
+                var agerange = await _ageRangeRepository.GetAsync();
+
+                response.StatusCode = 200;
+                response.Message = "OK";
+                response.Data = agerange;
                 return response;
 
             }
@@ -379,7 +402,7 @@ namespace auth.in2sport.application.Services.UserServices
 
             try
             {
-                MercadoPagoConfig.AccessToken = _config["AccessToken"];
+                MercadoPagoConfig.AccessToken = _config["MercadoPago:AccessToken"];
                 var preferenceRequest = new PreferenceRequest
                 {
                     Items = new List<PreferenceItemRequest>
@@ -393,9 +416,9 @@ namespace auth.in2sport.application.Services.UserServices
                     },
                     BackUrls = new PreferenceBackUrlsRequest
                     {
-                        Success = "http://localhost:59624/#/dashboard/course-subscription",
-                        Failure = "http://localhost:59624/#/dashboard/course-subscription",
-                        Pending = "http://localhost:59624/#/dashboard/course-subscription"
+                        Success = _config["MercadoPago:BackUrl"],
+                        Failure = _config["MercadoPago:BackUrl"],
+                        Pending = _config["MercadoPago:BackUrl"]
                     },
                     
                     Metadata = new Dictionary<string, object>
@@ -405,7 +428,7 @@ namespace auth.in2sport.application.Services.UserServices
 
                     },
                     AutoReturn = "approved",
-                    NotificationUrl = "https://11be-191-108-172-207.ngrok-free.app/api/v1/user/notifications_mercadopago"
+                    NotificationUrl = _config["MercadoPago:NotificationUrl"]
                 };
 
                 var client = new PreferenceClient();
@@ -436,7 +459,7 @@ namespace auth.in2sport.application.Services.UserServices
 
             try
             {
-                MercadoPagoConfig.AccessToken = _config["AccessToken"];
+                MercadoPagoConfig.AccessToken = _config["MercadoPago:AccessToken"];
                 var preferenceRequest = new PreferenceRequest
                 {
                     Items = new List<PreferenceItemRequest>
@@ -450,16 +473,16 @@ namespace auth.in2sport.application.Services.UserServices
                     },
                     BackUrls = new PreferenceBackUrlsRequest
                     {
-                        Success = "http://localhost:49744/#/dashboard",
-                        Failure = "http://localhost:49744/#/dashboard",
-                        Pending = "http://localhost:49744/#/dashboard"
+                        Success = _config["MercadoPago:BackUrl"],
+                        Failure = _config["MercadoPago:BackUrl"],
+                        Pending = _config["MercadoPago:BackUrl"]
                     },
                     Metadata = new Dictionary<string, object>
                     {
                         { "league_users", JsonSerializer.Serialize(request.Data) },
                     },
                     AutoReturn = "approved",
-                    NotificationUrl = "https://11be-191-108-172-207.ngrok-free.app/api/v1/user/notifications_mercadopago_league"
+                    NotificationUrl = _config["MercadoPago:NotificationUrlLeague"]
                 };
 
                 var client = new PreferenceClient();
@@ -490,7 +513,7 @@ namespace auth.in2sport.application.Services.UserServices
 
             try
             {
-                MercadoPagoConfig.AccessToken = _config["AccessToken"];
+                MercadoPagoConfig.AccessToken = _config["MercadoPago:AccessToken"];
 
                 if (request.Type == "payment" && (request.Action == "payment.created" || request.Action == "payment.updated"))
                 {
@@ -506,14 +529,14 @@ namespace auth.in2sport.application.Services.UserServices
                                     (entity => entity.UserId == userId, entity => entity.CourseId == courseId);
 
                         DateTime utcNow = DateTime.UtcNow;
-                        DateTime localDate = utcNow.AddHours(+5).Date;
+                        DateTime localDate = utcNow.AddHours(-5).Date;
 
                         if (validationSubsctiption.Count > 0)
                         {
                             UserSubscription subscription = validationSubsctiption[0];
 
                             subscription.MonthsSubscribed = subscription.MonthsSubscribed + 1;
-                            subscription.LastDate = localDate;
+                            subscription.LastDate = utcNow;
 
                             var result = await _userSubscriptionRepository.UpdateAsync(subscription);
                         }
@@ -524,7 +547,7 @@ namespace auth.in2sport.application.Services.UserServices
                                 UserId = userId,
                                 CourseId = courseId,
                                 MonthsSubscribed = 1,
-                                LastDate = localDate
+                                LastDate = utcNow
                             };
                             var result = await _userSubscriptionRepository.CreateAsync(subscription);
                         }
@@ -549,7 +572,7 @@ namespace auth.in2sport.application.Services.UserServices
 
             try
             {
-                MercadoPagoConfig.AccessToken = _config["AccessToken"];
+                MercadoPagoConfig.AccessToken = _config["MercadoPago:AccessToken"];
 
                 if (request.Type == "payment" && (request.Action == "payment.created" || request.Action == "payment.updated"))
                 {

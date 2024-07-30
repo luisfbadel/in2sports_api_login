@@ -13,7 +13,8 @@ namespace auth.in2sport.application.Services.UserServices
         Task<BaseResponse<List<UserResponse>>> GetByFilterAsync(string filter, Guid userId);
         Task<BaseResponse<List<DataRegisteredeUsersResponse>>> GetDataRegisteredUsers(DateTime dateOne, DateTime dateTwo);
         Task<BaseResponse<DataUsersStatusResponse>> GetUsersStatus();
-        Task<BaseResponse<List<UserType>>> GetTypesUser();
+        Task<BaseResponse<List<UserType>>> GetUseTypes();
+        Task<BaseResponse<List<AgeRange>>> GetAgeRange();
         Task<BaseResponse<UserResponse>> Ticket(CreateTicketRequest entity);
         Task<BaseResponse<dynamic>> CreatePreference(PreferenceDtoRequest entity);
         Task<BaseResponse<dynamic>> CreatePreferenceLeague(PreferenceLeagueDtoRequest entity);

@@ -109,13 +109,25 @@ namespace auth.in2sport.api.Controllers
             return BadRequest();
         }
 
-        [Route("api/v1/user/get-types-user")]
+        [Route("api/v1/user/get-user-types")]
         [HttpGet]
-        public async Task<IActionResult> GetTypesUser()
+        public async Task<IActionResult> GetUseTypes()
         {
             if (ModelState.IsValid)
             {
-                return Ok(await _userService.GetTypesUser());
+                return Ok(await _userService.GetUseTypes());
+            }
+            return BadRequest();
+        }
+
+
+        [Route("api/v1/user/get-age-range")]
+        [HttpGet]
+        public async Task<IActionResult> GetAgeRange()
+        {
+            if (ModelState.IsValid)
+            {
+                return Ok(await _userService.GetAgeRange());
             }
             return BadRequest();
         }

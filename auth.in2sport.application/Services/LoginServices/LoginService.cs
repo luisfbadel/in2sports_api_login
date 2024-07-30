@@ -108,6 +108,9 @@ namespace auth.in2sport.application.Services.LoginServices
                         {
                             throw new CreateFailedException("El usuario ya existe");
                         }
+                        DateTime utcNow = DateTime.UtcNow;
+                        DateTime localDate = utcNow.AddHours(+5).Date;
+
                         var userEntity = new Users
                         {
                             Email = request.Email,
@@ -122,9 +125,9 @@ namespace auth.in2sport.application.Services.LoginServices
                             DocumentNumber = request.DocumentNumber,
                             PhoneNumber = request.PhoneNumber,
                             Address = request.Address,
-                            CreationDate = DateTime.UtcNow.Date,
+                            CreationDate = localDate,
                             PasswordValidation = (int)request.PasswordValidation,
-                            Age = (int)request.Age
+                            Birthdate = (DateTime)request.Birthdate.ToUniversalTime(),
                         };
 
                         var result = await _loginRepository.CreateAsync(userEntity);
@@ -172,6 +175,8 @@ namespace auth.in2sport.application.Services.LoginServices
                         {
                             
                             var user = await _loginRepository.GetByEmailAsync(userRequest.Email!);
+                            DateTime utcNow = DateTime.UtcNow;
+                            DateTime localDate = utcNow.AddHours(+5).Date;
 
                             if (user == null)
                             {
@@ -189,9 +194,9 @@ namespace auth.in2sport.application.Services.LoginServices
                                     DocumentNumber = userRequest.DocumentNumber,
                                     PhoneNumber = userRequest.PhoneNumber,
                                     Address = userRequest.Address,
-                                    CreationDate = DateTime.UtcNow.Date,
+                                    CreationDate = localDate,
                                     PasswordValidation = (int)userRequest.PasswordValidation,
-                                    Age = (int)userRequest.Age
+                                    Birthdate = userRequest.Birthdate
                                 };
 
                                 var result = await _loginRepository.CreateAsync(userEntity);
@@ -243,7 +248,6 @@ namespace auth.in2sport.application.Services.LoginServices
 
                     user.Password = dataBytes;
                     user.PasswordValidation = 0;
-                    user.CreationDate = DateTime.UtcNow.Date;
 
                     var result = await _loginRepository.UpdateAsync(user);
 

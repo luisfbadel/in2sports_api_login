@@ -45,8 +45,8 @@ namespace auth.in2sport.application.AutoMapper
                     dest => dest.PasswordValidation,
                     src => src.MapFrom(x => x.PasswordValidation))
                 .ForMember(
-                    dest => dest.Age,
-                    src => src.MapFrom(x => x.Age));
+                    dest => dest.Birthdate,
+                    src => src.MapFrom(x => x.Birthdate));
 
         }
     }

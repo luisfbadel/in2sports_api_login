@@ -14,6 +14,7 @@ namespace auth.in2sport.infrastructure.Repositories.Postgres
         public DbSet<Users> Users { get; set; }
         public DbSet<UserType> TypeUser { get; set; }
         public DbSet<UserSubscription> UserSubscription { get; set; }
+        public DbSet<AgeRange> AgeRange { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -22,10 +23,13 @@ namespace auth.in2sport.infrastructure.Repositories.Postgres
             modelBuilder.Entity<Users>(ConfigureUser);
 
             modelBuilder.Entity<UserType>().HasKey(u => u.Id);
-            modelBuilder.Entity<UserType>(ConfigureTypeUser);
+            modelBuilder.Entity<UserType>(ConfigureUserType);
 
             modelBuilder.Entity<UserSubscription>().HasKey(u => u.Id);
             modelBuilder.Entity<UserSubscription>(ConfigureUserSubscription);
+
+            modelBuilder.Entity<AgeRange>().HasKey(u => u.Id);
+            modelBuilder.Entity<AgeRange>(ConfigureAgeRange);
         }
 
         private void ConfigureUser(EntityTypeBuilder<Users> builder)
@@ -47,10 +51,10 @@ namespace auth.in2sport.infrastructure.Repositories.Postgres
             builder.Property(u => u.Address).HasColumnName("address");
             builder.Property(u => u.CreationDate).HasColumnName("creation_date");
             builder.Property(u => u.PasswordValidation).HasColumnName("password_validation");
-            builder.Property(u => u.Age).HasColumnName("age");
+            builder.Property(u => u.Birthdate).HasColumnName("birthdate");
         }
 
-        private void ConfigureTypeUser(EntityTypeBuilder<UserType> builder)
+        private void ConfigureUserType(EntityTypeBuilder<UserType> builder)
         {
             builder.ToTable("user_type");
 
@@ -68,6 +72,16 @@ namespace auth.in2sport.infrastructure.Repositories.Postgres
             builder.Property(u => u.CourseId).HasColumnName("course_id");
             builder.Property(u => u.MonthsSubscribed).HasColumnName("months_subscribed");
             builder.Property(u => u.LastDate).HasColumnName("last_date");
+
+        }
+
+        private void ConfigureAgeRange(EntityTypeBuilder<AgeRange> builder)
+        {
+            builder.ToTable("age_range");
+
+            builder.Property(u => u.Id).HasColumnName("id");
+            builder.Property(u => u.StartAge).HasColumnName("start_age");
+            builder.Property(u => u.EndAge).HasColumnName("end_age");
 
         }
     }
