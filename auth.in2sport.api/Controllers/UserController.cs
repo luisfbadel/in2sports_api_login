@@ -1,5 +1,6 @@
 ﻿using auth.in2sport.application.Services.UserServices;
 using auth.in2sport.application.Services.UserServices.Request;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace auth.in2sport.api.Controllers
@@ -30,6 +31,7 @@ namespace auth.in2sport.api.Controllers
 
         #endregion
 
+        [Authorize]
         [Route("api/v1/user/get-all")]
         [HttpGet]
         public async Task<IActionResult> GetAll(int page = 1, int pageSize = 30)
@@ -41,6 +43,7 @@ namespace auth.in2sport.api.Controllers
             return BadRequest();
         }
 
+        [Authorize]
         [Route("api/v1/user/update-user")]
         [HttpPatch]
         public async Task<IActionResult> UpdateUser(UpdateUserRequest request)
@@ -53,6 +56,7 @@ namespace auth.in2sport.api.Controllers
 
         }
 
+        [Authorize]
         [Route("api/v1/user/activate-user")]
         [HttpPost]
         public async Task<IActionResult> ActivateUser(Guid id)
@@ -64,6 +68,7 @@ namespace auth.in2sport.api.Controllers
             return BadRequest();
         }
 
+        [Authorize]
         [Route("api/v1/user/inactivate-user")]
         [HttpPost]
         public async Task<IActionResult> InactivateUser(Guid id)
@@ -75,6 +80,7 @@ namespace auth.in2sport.api.Controllers
             return BadRequest();
         }
 
+        [Authorize]
         [Route("api/v1/user/get-by-filter")]
         [HttpGet]
         public async Task<IActionResult> GetByFilterAsync(string filter, Guid userId)
@@ -86,6 +92,7 @@ namespace auth.in2sport.api.Controllers
             return BadRequest();
         }
 
+        [Authorize]
         [Route("api/v1/user/get-registered-users")]
         [HttpGet]
         public async Task<IActionResult> GetData(DateTime dateOne, DateTime dateTwo)
@@ -97,7 +104,7 @@ namespace auth.in2sport.api.Controllers
             return BadRequest();
         }
 
-
+        [Authorize]
         [Route("api/v1/user/get-users-status")]
         [HttpGet]
         public async Task<IActionResult> GetUsersStatus()
@@ -109,6 +116,7 @@ namespace auth.in2sport.api.Controllers
             return BadRequest();
         }
 
+        [Authorize]
         [Route("api/v1/user/get-user-types")]
         [HttpGet]
         public async Task<IActionResult> GetUseTypes()
@@ -120,7 +128,7 @@ namespace auth.in2sport.api.Controllers
             return BadRequest();
         }
 
-
+        [Authorize]
         [Route("api/v1/user/get-age-range")]
         [HttpGet]
         public async Task<IActionResult> GetAgeRange()
@@ -132,6 +140,7 @@ namespace auth.in2sport.api.Controllers
             return BadRequest();
         }
 
+        [Authorize]
         [Route("api/v1/user/ticket")]
         [HttpPost]
         public async Task<IActionResult> Ticket(CreateTicketRequest request)
@@ -143,6 +152,7 @@ namespace auth.in2sport.api.Controllers
             return BadRequest();
         }
 
+        [Authorize]
         [Route("api/v1/user/get-validation-user")]
         [HttpGet]
         public async Task<IActionResult> GetValidationUser(string email)
@@ -154,7 +164,7 @@ namespace auth.in2sport.api.Controllers
             return BadRequest();
         }
 
-
+        [Authorize]
         [Route("api/v1/user/create_preference")]
         [HttpPost]
         public async Task<IActionResult> CreatePreference(PreferenceDtoRequest request)
@@ -166,6 +176,7 @@ namespace auth.in2sport.api.Controllers
             return BadRequest();
         }
 
+        [Authorize]
         [Route("api/v1/user/create_preference_league")]
         [HttpPost]
         public async Task<IActionResult> CreatePreferenceLeague(PreferenceLeagueDtoRequest request)

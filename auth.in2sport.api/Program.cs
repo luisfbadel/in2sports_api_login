@@ -1,8 +1,11 @@
+using auth.in2sport.api.Middleware;
 using auth.in2sport.application.Services.LoginServices;
 using auth.in2sport.application.Services.UserServices;
 using auth.in2sport.infrastructure.Repositories;
 using auth.in2sport.infrastructure.Repositories.Postgres;
-using Microsoft.Extensions.Options;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
@@ -11,7 +14,6 @@ builder.Services.AddSwaggerGen();
 
 //Environment variable
 var env = builder.Environment;
-
 builder.Configuration
     .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
     .AddJsonFile($"appsettings.{env.EnvironmentName}.json", optional: true, reloadOnChange: true)
@@ -21,21 +23,41 @@ builder.Configuration
 builder.Services.AddTransient<ILoginService, LoginService>();
 builder.Services.AddTransient<IUserService, UserService>();
 
-
 //Dependency Injection for repositories
 builder.Services.AddDbContext<PostgresDbContext>();
 builder.Services.AddTransient(typeof(IBaseRepository<>), typeof(PostgresRepository<>));
-
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
-builder.Services.AddCors(Options =>
+//Autentication
+var securityKey = Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!);
+builder.Services.AddAuthentication(config =>
 {
-    Options.AddPolicy("ApiPolitics", app =>
+    config.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    config.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+}).AddJwtBearer(config =>
+{
+    config.RequireHttpsMetadata = false;
+    config.SaveToken = true;
+    config.TokenValidationParameters = new TokenValidationParameters
     {
-        app.AllowAnyOrigin()
-        .AllowAnyHeader() 
-        .AllowAnyMethod();
-    });
+        ValidateIssuerSigningKey = true,
+        IssuerSigningKey = new SymmetricSecurityKey(securityKey),
+        ValidateIssuer = false,
+        ValidateAudience = false,
+        ValidateLifetime = true,
+        ClockSkew = TimeSpan.Zero
+    };
+});
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAllOrigins",
+        builder =>
+        {
+            builder.AllowAnyOrigin()
+                   .AllowAnyHeader()
+                   .AllowAnyMethod();
+        });
 });
 
 var app = builder.Build();
@@ -44,8 +66,12 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+// Registrar el middleware de API Key.
+app.UseMiddleware<ApiKeyMiddleware>();
+
 app.UseHttpsRedirection();
-app.UseCors("ApiPolitics");
+app.UseCors("AllowAllOrigins");
+app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 app.Run();

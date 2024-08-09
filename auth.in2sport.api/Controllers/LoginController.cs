@@ -1,7 +1,10 @@
 ﻿using auth.in2sport.application.Services.LoginServices;
 using auth.in2sport.application.Services.LoginServices.Requests;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion.Internal;
+using System.IdentityModel.Tokens.Jwt;
 
 namespace auth.in2sport.api.Controllers
 {
@@ -33,6 +36,7 @@ namespace auth.in2sport.api.Controllers
         #endregion
 
         [Route("api/v1/login/signIn")]
+        [EnableCors("AllowAllOrigins")]
         [HttpPost]
         public async Task<IActionResult> SignIn(SignInRequest request)
         {
@@ -54,6 +58,7 @@ namespace auth.in2sport.api.Controllers
             else return BadRequest();
         }
 
+        [Authorize]
         [Route("api/v1/login/user-registration")]
         [HttpPost]
         public async Task<IActionResult> UserRegisteation(List<SignUpRequest> request)
@@ -65,6 +70,7 @@ namespace auth.in2sport.api.Controllers
             else return BadRequest();
         }
 
+        [Authorize]
         [Route("api/v1/login/update-password")]
         [HttpPatch]
         public async Task<IActionResult> UpdatePassword(Guid userId, string newPassword)
@@ -72,6 +78,17 @@ namespace auth.in2sport.api.Controllers
             if (ModelState.IsValid)
             {
                 return Ok(await _loginService.UpdatePassword(userId, newPassword));
+            }
+            else return BadRequest();
+        }
+
+        [HttpPost]
+        [Route("api/v1/login/get-refresh-token")]
+        public async Task<IActionResult> GetRefreshToken(RefreshTokenRequest request)
+        {
+            if (ModelState.IsValid)
+            {
+                return Ok(await _loginService.GetRefreshToken(request));
             }
             else return BadRequest();
         }

@@ -3,12 +3,15 @@ using auth.in2sport.application.Services.LoginServices.Response;
 using auth.in2sport.infrastructure.Repositories;
 using auth.in2sport.infrastructure.Repositories.Postgres.Entities;
 using AutoMapper;
+using MercadoPago.Resource.User;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
+using Newtonsoft.Json.Linq;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
-using JwtRegisteredClaimNames = System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames;
 
 namespace auth.in2sport.application.Services.LoginServices
 {
@@ -23,6 +26,7 @@ namespace auth.in2sport.application.Services.LoginServices
         ///  Instance of the Base Mapper
         /// </summary>
         private readonly IBaseRepository<Users> _loginRepository;
+        private readonly IBaseRepository<RefreshTokenHistory> _refreshTokenHistoryRepository;
         private readonly IConfiguration _config;
         private readonly IMapper _mapper;
 
@@ -36,9 +40,10 @@ namespace auth.in2sport.application.Services.LoginServices
         /// <param name="loginRepository"></param>
         /// <param name="config"></param>
         /// <exception cref="ArgumentNullException"></exception>
-        public LoginService(IBaseRepository<Users> loginRepository, IConfiguration config, IMapper mapper)
+        public LoginService(IBaseRepository<Users> loginRepository, IBaseRepository<RefreshTokenHistory> refreshTokenHistoryRepository, IConfiguration config, IMapper mapper)
         {
             _loginRepository = loginRepository ?? throw new ArgumentNullException(nameof(loginRepository));
+            _refreshTokenHistoryRepository = refreshTokenHistoryRepository ?? throw new ArgumentNullException(nameof(refreshTokenHistoryRepository));
             _config = config ?? throw new ArgumentNullException();
             _mapper = mapper ?? throw new ArgumentNullException();
         }
@@ -60,20 +65,24 @@ namespace auth.in2sport.application.Services.LoginServices
                 }
                 try
                 {
-                    var token = Authorize(user);
-                    tokens.user = _mapper.Map<UserResponse>(user);
-                    tokens.AuthToken = token;
-
                     //byte[] hashedPassword = EncriptPasscode("k12345");
                     byte[] dataBytes = Convert.FromBase64String(request.Password);
                     bool validatorPassword = user!.Password!.SequenceEqual(dataBytes);
-
                     if (!validatorPassword)
                     {
                         response.StatusCode = 401;
                         response.Message = "Unauthorized";
                         return response;
                     }
+
+                    string token = Authorize(user);
+                    string refreshTokenCreated = GenerarRefreshToken();
+                    tokens.user = _mapper.Map<UserResponse>(user);
+                    tokens.AuthToken = token;
+                    tokens.RefreshToken = refreshTokenCreated;
+
+                    var result = await KeepRefreshTokenHistory(user, token, refreshTokenCreated);
+
                     response.StatusCode = 200;
                     response.Message = "OK";
                     response.Data = tokens;
@@ -275,29 +284,85 @@ namespace auth.in2sport.application.Services.LoginServices
             }
         }
 
+        public async Task<BaseResponse<SignInResponse>> GetRefreshToken(RefreshTokenRequest request)
+        {
+            var response = new BaseResponse<SignInResponse>();
+            var tokens = new SignInResponse();
+
+            try
+            {
+                var tokenHandler = new JwtSecurityTokenHandler();
+                var tokenExpiradoSupposedly = tokenHandler.ReadJwtToken(request.TokenExpirado);
+
+                if (tokenExpiradoSupposedly.ValidTo > DateTime.UtcNow)
+                {
+                    response.StatusCode = 400;
+                    response.Message = "El token no ha expirado";
+
+                    return response;
+                }
+
+                string idUsuario = tokenExpiradoSupposedly.Claims.First(x =>
+                    x.Type == JwtRegisteredClaimNames.NameId).Value.ToString();
+
+
+                var refreshTokenFinded = await _refreshTokenHistoryRepository.GetByFilterAsync(entity => entity.UserId == Guid.Parse(idUsuario));
+
+                var userRefrechtoken = refreshTokenFinded[0];
+
+                if (userRefrechtoken.Token != request.TokenExpirado || userRefrechtoken.RefreshToken != request.RefreshToken) {
+                    response.StatusCode = 400;
+                    response.Message = "No existe refresh token";
+
+                    return response;
+                }
+
+                var user = await _loginRepository.GetByIdAsync(userRefrechtoken.UserId);
+                var refreshTokenCreated = GenerarRefreshToken();
+                var token = Authorize(user);
+
+                tokens.user = _mapper.Map<UserResponse>(user);
+                tokens.AuthToken = token;
+                tokens.RefreshToken = refreshTokenCreated;
+
+                var result = await KeepRefreshTokenHistory(user, token, refreshTokenCreated);
+
+                response.StatusCode = 200;
+                response.Message = "OK";
+                response.Data = tokens;
+
+                return response;
+            }
+
+            
+            catch (Exception ex)
+            {
+                throw new LoginFailedException($"Error durante la obtención del usuario: {ex.Message}", 500);
+            }
+        }
+
         #region Private Methods
 
         private string Authorize(Users user)
         {
             try
             {
-                var claims = new[]
-                {
-                    new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-                    new Claim(JwtRegisteredClaimNames.Iat, DateTime.UtcNow.ToString()),
-                    new Claim("usuario", user.Email!)
-                };
+                var claims = new ClaimsIdentity();
+                claims.AddClaim(new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()));
 
                 var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]!));
                 var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
-                var token = new JwtSecurityToken(
-                                _config["Jwt:Issuer"],
-                                _config["Jwt:Audience"],
-                                claims,
-                                expires: DateTime.Now.AddMinutes(60),
-                                signingCredentials: credentials);
+                var token = new SecurityTokenDescriptor
+                {
+                    Subject = claims,
+                    Expires = DateTime.UtcNow.AddMinutes(5),
+                    SigningCredentials = credentials
 
-                return new JwtSecurityTokenHandler().WriteToken(token);
+                };
+                var tokenHandler = new JwtSecurityTokenHandler();
+                var tokenConfig = tokenHandler.CreateToken(token);
+
+                return new JwtSecurityTokenHandler().WriteToken(tokenConfig);
             }
             catch (ArgumentNullException ex)
             {
@@ -339,6 +404,52 @@ namespace auth.in2sport.application.Services.LoginServices
                 Console.WriteLine($"Error inesperado durante la encriptación de la contraseña. {ex.Message}");
                 throw;
             }
+        }
+
+        private string GenerarRefreshToken()
+        {
+            var byteArray = new byte[64];
+            var refreshToken = "";
+
+            using (var rng = RandomNumberGenerator.Create())
+            {
+                rng.GetBytes(byteArray);
+                refreshToken = Convert.ToBase64String(byteArray);
+            }
+            return refreshToken;
+        }
+
+        private async Task<bool> KeepRefreshTokenHistory(Users user, string token, string refreshToken)
+        {
+
+            var refreshTokenFinded = await _refreshTokenHistoryRepository.GetByFilterAsync(entity => entity.UserId == user.Id);
+
+            bool result;
+            if (refreshTokenFinded.Count == 0)
+            {
+                var refreshTokenHistory = new RefreshTokenHistory
+                {
+                    UserId = user.Id,
+                    Token = token,
+                    RefreshToken = refreshToken,
+                    CreationDate = DateTime.UtcNow,
+                    ExpirationDate = DateTime.UtcNow.AddMinutes(10)
+                };
+
+                result = await _refreshTokenHistoryRepository.CreateAsync(refreshTokenHistory);
+            }
+            else
+            {
+                var userRefreshToken = refreshTokenFinded[0];
+
+                userRefreshToken.Token = token;
+                userRefreshToken.RefreshToken = refreshToken;
+                userRefreshToken.CreationDate = DateTime.UtcNow;
+                userRefreshToken.ExpirationDate = DateTime.UtcNow.AddMinutes(10);
+
+                result = await _refreshTokenHistoryRepository.UpdateAsync(userRefreshToken);
+            }
+            return result;
         }
 
         #endregion

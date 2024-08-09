@@ -4,6 +4,8 @@
     {
         public string? AuthToken { get; set; }
 
+        public string? RefreshToken { get; set; }
+
         public  UserResponse? user { get; set;}
     }
 }

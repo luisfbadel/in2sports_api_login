@@ -1,20 +1,28 @@
 ﻿using auth.in2sport.infrastructure.Repositories.Postgres.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Microsoft.Extensions.Configuration;
 
 namespace auth.in2sport.infrastructure.Repositories.Postgres
 {
     public class PostgresDbContext: DbContext
     {
+        private readonly IConfiguration _config;
+
+        public PostgresDbContext(IConfiguration config)
+        {
+            _config = config;
+        }
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-            optionsBuilder.UseNpgsql(@"Host=localhost;Username=postgres;Password=Admin123;Database=in2sports");
+            optionsBuilder.UseNpgsql(_config.GetConnectionString("DefaultConnection"));
         }
 
         public DbSet<Users> Users { get; set; }
         public DbSet<UserType> TypeUser { get; set; }
         public DbSet<UserSubscription> UserSubscription { get; set; }
         public DbSet<AgeRange> AgeRange { get; set; }
+        public DbSet<RefreshTokenHistory> RefreshTokenHistory { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -30,6 +38,9 @@ namespace auth.in2sport.infrastructure.Repositories.Postgres
 
             modelBuilder.Entity<AgeRange>().HasKey(u => u.Id);
             modelBuilder.Entity<AgeRange>(ConfigureAgeRange);
+
+            modelBuilder.Entity<RefreshTokenHistory>().HasKey(u => u.Id);
+            modelBuilder.Entity<RefreshTokenHistory>(ConfigureRefreshTokenHistory);
         }
 
         private void ConfigureUser(EntityTypeBuilder<Users> builder)
@@ -72,7 +83,6 @@ namespace auth.in2sport.infrastructure.Repositories.Postgres
             builder.Property(u => u.CourseId).HasColumnName("course_id");
             builder.Property(u => u.MonthsSubscribed).HasColumnName("months_subscribed");
             builder.Property(u => u.LastDate).HasColumnName("last_date");
-
         }
 
         private void ConfigureAgeRange(EntityTypeBuilder<AgeRange> builder)
@@ -82,7 +92,18 @@ namespace auth.in2sport.infrastructure.Repositories.Postgres
             builder.Property(u => u.Id).HasColumnName("id");
             builder.Property(u => u.StartAge).HasColumnName("start_age");
             builder.Property(u => u.EndAge).HasColumnName("end_age");
+        }
 
+        private void ConfigureRefreshTokenHistory(EntityTypeBuilder<RefreshTokenHistory> builder)
+        {
+            builder.ToTable("refresh_token_history");
+
+            builder.Property(u => u.Id).HasColumnName("id");
+            builder.Property(u => u.UserId).HasColumnName("user_id");
+            builder.Property(u => u.Token).HasColumnName("token");
+            builder.Property(u => u.RefreshToken).HasColumnName("refresh_token");
+            builder.Property(u => u.CreationDate).HasColumnName("creation_date").HasColumnType("timestamp with time zone");
+            builder.Property(u => u.ExpirationDate).HasColumnName("expiration_date").HasColumnType("timestamp with time zone");
         }
     }
 }
