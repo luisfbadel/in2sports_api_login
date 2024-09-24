@@ -10,17 +10,17 @@ namespace auth.in2sport.application.Services.UserServices
         Task<BaseResponse<UserResponse>> ActivateUser(Guid id);
         Task<BaseResponse<UserResponse>> InactivateUser(Guid id);
         Task<BaseResponse<UserResponse>> UpdateUser(UpdateUserRequest entity);
-        Task<BaseResponse<List<UserResponse>>> GetByFilterAsync(string filter, Guid userId);
-        Task<BaseResponse<List<DataRegisteredeUsersResponse>>> GetDataRegisteredUsers(DateTime dateOne, DateTime dateTwo);
+        Task<BaseResponse<List<UserResponse>>> GetByFilterAsync(UsersFiltersRequest request);
+        Task<BaseResponse<List<DataRegisteredUsersResponse>>> GetDataRegisteredUsers(DateTime dateOne, DateTime dateTwo);
         Task<BaseResponse<DataUsersStatusResponse>> GetUsersStatus();
         Task<BaseResponse<List<UserType>>> GetUseTypes();
         Task<BaseResponse<List<AgeRange>>> GetAgeRange();
         Task<BaseResponse<UserResponse>> Ticket(CreateTicketRequest entity);
+        Task<BaseResponse<bool>> GetValidationUser(string email);
         Task<BaseResponse<dynamic>> CreatePreference(PreferenceDtoRequest entity);
         Task<BaseResponse<dynamic>> CreatePreferenceLeague(PreferenceLeagueDtoRequest entity);
         Task<BaseResponse<dynamic>> NotificationsMercadopago(NotificationRequest entity);
         Task<BaseResponse<dynamic>> NotificationsMercadopagoLeague(NotificationRequest entity);
-        Task<BaseResponse<bool>> GetValidationUser(string email);
-
+        Task<BaseResponse<dynamic>> CreateSuscription(PreapprovalRequest entity);
     }
 }

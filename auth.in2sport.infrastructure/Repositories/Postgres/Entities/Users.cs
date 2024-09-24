@@ -34,6 +34,12 @@ namespace auth.in2sport.infrastructure.Repositories.Postgres.Entities
 
         public int PasswordValidation {  get; set; }
 
-        public DateTime? Birthdate { get; set; }
+        public DateTime Birthdate { get; set; }
+
+        public string? InstitutionName { get; set; }
+
+        public int EmailValidation { get; set; }
+
+        public string? TokenConfirmation {  get; set; }
     }
 }

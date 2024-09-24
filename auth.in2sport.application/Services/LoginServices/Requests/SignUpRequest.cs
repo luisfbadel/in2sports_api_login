@@ -33,6 +33,9 @@ namespace auth.in2sport.application.Services.LoginServices.Requests
         public string? SecondLastname { get; set; }
 
         [Required]
+        public DateTime Birthdate { get; set; }
+
+        [Required]
         public int? TypeDocument { get; set; }
 
         [Required]
@@ -41,7 +44,7 @@ namespace auth.in2sport.application.Services.LoginServices.Requests
         [Required]
         public long? PhoneNumber { get; set; }
 
-        [Required]
+        
         public string? Address { get; set; }
 
         [Required]
@@ -50,7 +53,10 @@ namespace auth.in2sport.application.Services.LoginServices.Requests
         [Required]
         public int? PasswordValidation { get; set; }
 
+        public string? InstitutionName { get; set; }
+
         [Required]
-        public DateTime Birthdate { get; set; }
+        public int? EmailValidation { get; set; }
+
     }
 }

@@ -1,6 +1,6 @@
 ﻿namespace auth.in2sport.application.Services.UserServices.Response
 {
-    public class DataRegisteredeUsersResponse
+    public class DataRegisteredUsersResponse
     {
         public int Month { get; set; }
 

@@ -29,5 +29,10 @@
         public int PasswordValidation { get; set; }
 
         public DateTime Birthdate { get; set; }
+
+        public string? InstitutionName { get; set; }
+
+        public int EmailValidation { get; set; }
+
     }
 }

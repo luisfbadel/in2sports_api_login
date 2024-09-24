@@ -80,14 +80,14 @@ namespace auth.in2sport.api.Controllers
             return BadRequest();
         }
 
-        [Authorize]
+        //[Authorize]
         [Route("api/v1/user/get-by-filter")]
-        [HttpGet]
-        public async Task<IActionResult> GetByFilterAsync(string filter, Guid userId)
+        [HttpPost]
+        public async Task<IActionResult> GetByFilterAsync(UsersFiltersRequest request)
         {
             if (ModelState.IsValid)
             {
-                return Ok(await _userService.GetByFilterAsync(filter, userId));
+                return Ok(await _userService.GetByFilterAsync(request));
             }
             return BadRequest();
         }
@@ -116,7 +116,7 @@ namespace auth.in2sport.api.Controllers
             return BadRequest();
         }
 
-        [Authorize]
+        //[Authorize]
         [Route("api/v1/user/get-user-types")]
         [HttpGet]
         public async Task<IActionResult> GetUseTypes()
@@ -164,7 +164,7 @@ namespace auth.in2sport.api.Controllers
             return BadRequest();
         }
 
-        [Authorize]
+        //[Authorize]
         [Route("api/v1/user/create_preference")]
         [HttpPost]
         public async Task<IActionResult> CreatePreference(PreferenceDtoRequest request)
@@ -176,7 +176,7 @@ namespace auth.in2sport.api.Controllers
             return BadRequest();
         }
 
-        [Authorize]
+        //[Authorize]
         [Route("api/v1/user/create_preference_league")]
         [HttpPost]
         public async Task<IActionResult> CreatePreferenceLeague(PreferenceLeagueDtoRequest request)
@@ -206,6 +206,17 @@ namespace auth.in2sport.api.Controllers
             if (ModelState.IsValid)
             {
                 return Ok(await _userService.NotificationsMercadopagoLeague(request));
+            }
+            return BadRequest();
+        }
+
+        [Route("api/v1/user/create_suscription")]
+        [HttpPost]
+        public async Task<IActionResult> CreateSuscription(PreapprovalRequest request)
+        {
+            if (ModelState.IsValid)
+            {
+                return Ok(await _userService.CreateSuscription(request));
             }
             return BadRequest();
         }

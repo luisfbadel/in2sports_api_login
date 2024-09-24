@@ -30,5 +30,10 @@
 
         public DateTime Birthdate { get; set; }
 
+        public string? InstitutionName { get; set; }
+
+        public int EmailValidation { get; set; }
+
+
     }
 }

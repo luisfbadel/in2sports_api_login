@@ -3,15 +3,17 @@ using auth.in2sport.application.Services.LoginServices.Response;
 using auth.in2sport.infrastructure.Repositories;
 using auth.in2sport.infrastructure.Repositories.Postgres.Entities;
 using AutoMapper;
-using MercadoPago.Resource.User;
-using Microsoft.EntityFrameworkCore;
+using MailKit.Security;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
-using Newtonsoft.Json.Linq;
+using MimeKit.Text;
+using MimeKit;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
+using MailKit.Net.Smtp;
+using Newtonsoft.Json.Linq;
 
 namespace auth.in2sport.application.Services.LoginServices
 {
@@ -103,7 +105,7 @@ namespace auth.in2sport.application.Services.LoginServices
         public async Task<BaseResponse<SignUpResponse>> SignUp(SignUpRequest request)
         {
             var response = new BaseResponse<SignUpResponse>();
-            var tokens = new SignUpResponse();
+            var signUpResponse = new SignUpResponse();
 
             try
             {
@@ -115,10 +117,25 @@ namespace auth.in2sport.application.Services.LoginServices
 
                         if (user != null)
                         {
-                            throw new CreateFailedException("El usuario ya existe");
+                            response.StatusCode = 400;
+                            response.Message = "El usuario ya existe";
+
+                            return response;
+                            //throw new CreateFailedException("El usuario ya existe");
                         }
-                        DateTime utcNow = DateTime.UtcNow;
-                        DateTime localDate = utcNow.AddHours(+5).Date;
+
+                        var resultDocumenTNumber = await _loginRepository.GetByFilterAsync(entity => entity.DocumentNumber == request.DocumentNumber);
+
+                        if (resultDocumenTNumber.Count > 0)
+                        {
+                            response.StatusCode = 400;
+                            response.Message = "La cedula ya existe";
+
+                            return response;
+                        }
+                        DateTime localDate = DateTime.UtcNow;
+
+                        var tokenConfirmation = GenerateSecureToken();
 
                         var userEntity = new Users
                         {
@@ -137,7 +154,16 @@ namespace auth.in2sport.application.Services.LoginServices
                             CreationDate = localDate,
                             PasswordValidation = (int)request.PasswordValidation,
                             Birthdate = (DateTime)request.Birthdate.ToUniversalTime(),
+                            InstitutionName = request.InstitutionName,
+                            EmailValidation = (int)request.EmailValidation,
+                            TokenConfirmation = tokenConfirmation,
                         };
+
+                        var resultSendEmail = await SendEmail(userEntity, tokenConfirmation);
+                        if (!resultSendEmail)
+                        {
+                            throw new CreateFailedException("Error al enviar correo", 400);
+                        }
 
                         var result = await _loginRepository.CreateAsync(userEntity);
 
@@ -148,13 +174,11 @@ namespace auth.in2sport.application.Services.LoginServices
 
                         await transaction.CommitAsync();
 
-                        var token = Authorize(userEntity);
-                        tokens.user = _mapper.Map<UserResponse>(userEntity);
-                        tokens.AuthToken = token;
+                        signUpResponse.user = _mapper.Map<UserResponse>(userEntity);
 
-                        response.StatusCode = 201;
+                        response.StatusCode = 200;
                         response.Message = "OK";
-                        response.Data = tokens;
+                        response.Data = signUpResponse;
                         return response;
                     }
                     catch (Exception ex)
@@ -184,8 +208,7 @@ namespace auth.in2sport.application.Services.LoginServices
                         {
                             
                             var user = await _loginRepository.GetByEmailAsync(userRequest.Email!);
-                            DateTime utcNow = DateTime.UtcNow;
-                            DateTime localDate = utcNow.AddHours(+5).Date;
+                            DateTime localDate = DateTime.UtcNow;
 
                             if (user == null)
                             {
@@ -219,7 +242,7 @@ namespace auth.in2sport.application.Services.LoginServices
 
                         await transaction.CommitAsync();
 
-                        response.StatusCode = 201;
+                        response.StatusCode = 200;
                         response.Message = "OK";
                         response.Data = "Registro exitoso";
                         return response;
@@ -237,14 +260,14 @@ namespace auth.in2sport.application.Services.LoginServices
             }
         }
 
-        public async Task<BaseResponse<SignInResponse>> UpdatePassword(Guid userId, string newPassword)
+        public async Task<BaseResponse<SignInResponse>> UpdatePassword(UpdatePasswodRequest request)
         {
             var response = new BaseResponse<SignInResponse>();
             var userResponse = new SignInResponse();
 
             try
             {
-                var user = await _loginRepository.GetByIdAsync(userId);
+                var user = await _loginRepository.GetByIdAsync(request.UserId);
 
                 if (user == null)
                 {
@@ -253,9 +276,11 @@ namespace auth.in2sport.application.Services.LoginServices
                 try
                 {
                     //byte[] hashedPassword = EncriptPasscode("k12345");
-                    byte[] dataBytes = Convert.FromBase64String(newPassword);
+                    byte[] dataBytes = Convert.FromBase64String(request.NewPassword);
 
                     user.Password = dataBytes;
+                    user.CreationDate = user.CreationDate.ToUniversalTime();
+                    user.Birthdate = user.Birthdate.ToUniversalTime();
                     user.PasswordValidation = 0;
 
                     var result = await _loginRepository.UpdateAsync(user);
@@ -265,7 +290,6 @@ namespace auth.in2sport.application.Services.LoginServices
                         throw new LoginFailedException("El usuario no existe");
                     }
                     userResponse.user = _mapper.Map<UserResponse>(user);
-                    userResponse.AuthToken = "";
 
                     response.StatusCode = 200;
                     response.Message = "OK";
@@ -310,16 +334,17 @@ namespace auth.in2sport.application.Services.LoginServices
 
                 var userRefrechtoken = refreshTokenFinded[0];
 
-                if (userRefrechtoken.Token != request.TokenExpirado || userRefrechtoken.RefreshToken != request.RefreshToken) {
+                if (userRefrechtoken.Token != request.TokenExpirado || userRefrechtoken.RefreshToken != request.RefreshToken)
+                {
                     response.StatusCode = 400;
                     response.Message = "No existe refresh token";
 
                     return response;
                 }
 
-                var user = await _loginRepository.GetByIdAsync(userRefrechtoken.UserId);
-                var refreshTokenCreated = GenerarRefreshToken();
+                var user = await _loginRepository.GetByIdAsync(Guid.Parse(idUsuario));
                 var token = Authorize(user);
+                var refreshTokenCreated = GenerarRefreshToken();
 
                 tokens.user = _mapper.Map<UserResponse>(user);
                 tokens.AuthToken = token;
@@ -341,6 +366,57 @@ namespace auth.in2sport.application.Services.LoginServices
             }
         }
 
+        public async Task<BaseResponse<SignInResponse>> ValidateEmail(CodeKeyRequest request)
+        {
+            var response = new BaseResponse<SignInResponse>();
+            var data = new SignInResponse();
+
+            try
+            {
+                var user = await _loginRepository.GetByIdAsync(Guid.Parse(request.UserId));
+
+                if (user == null)
+                {
+                    throw new LoginFailedException("El usuario no existe");
+                }
+
+                if (user.TokenConfirmation == request.CodeKey)
+                {
+                    user.CreationDate = user.CreationDate.ToUniversalTime();
+                    user.Birthdate = user.Birthdate.ToUniversalTime();
+                    user.Status = 1;
+                    user.TokenConfirmation = null;
+                    user.EmailValidation = 0;
+
+                    var result = await _loginRepository.UpdateAsync(user);
+
+                    data.user = _mapper.Map<UserResponse>(user);
+                    data.AuthToken = "";
+                    data.RefreshToken = "";
+
+                    response.StatusCode = 200;
+                    response.Message = "OK";
+                    response.Data = data;
+
+                    return response;
+                }
+
+                data.user = _mapper.Map<UserResponse>(user);
+                data.AuthToken = "";
+                data.RefreshToken = "";
+
+                response.StatusCode=200;
+                response.Message= "OK";
+                response.Data = data;
+
+                return response;
+            }
+            catch (Exception ex)
+            {
+                throw new LoginFailedException($"Error durante la actualizacion: {ex.Message}", 500);
+            }
+        }
+
         #region Private Methods
 
         private string Authorize(Users user)
@@ -355,7 +431,7 @@ namespace auth.in2sport.application.Services.LoginServices
                 var token = new SecurityTokenDescriptor
                 {
                     Subject = claims,
-                    Expires = DateTime.UtcNow.AddMinutes(5),
+                    Expires = DateTime.UtcNow.AddMinutes(2),
                     SigningCredentials = credentials
 
                 };
@@ -450,6 +526,78 @@ namespace auth.in2sport.application.Services.LoginServices
                 result = await _refreshTokenHistoryRepository.UpdateAsync(userRefreshToken);
             }
             return result;
+        }
+
+        public static string GenerateSecureToken(int length = 3)
+        {
+            byte[] tokenBytes = new byte[length];
+
+            using (var rng = RandomNumberGenerator.Create())
+            {
+                rng.GetBytes(tokenBytes);
+            }
+
+            return Convert.ToHexString(tokenBytes);
+        }
+
+        public async Task<bool> SendEmail(Users user, string tokenConfirmation)
+        {
+            try
+            {
+                string content = @"
+                                    <!DOCTYPE html>
+                                    <html lang='es'>
+                                    <body>
+                                        <div style='width:600px;padding:20px;border:1px solid #DBDBDB;border-radius:12px;font-family:Sans-serif'>
+                                            <h1 style='color:#C76F61'>Confirmar correo electrónico</h1>
+                                            <p style='margin-bottom:25px'>Estimado/a&nbsp;<b>{0}</b>:</p>
+                                            <p style='margin-bottom:25px'>Gracias por abrir una cuenta con nosotros. Para utilizar su cuenta, primero deberá confirmar su correo electrónico usando la siguiente llave.</p>
+                                            <p style='margin-bottom:25px'><b>{1}</b></p>
+                                            <p style='margin-top:25px'>No respondas directamente a este email generado automáticamente. .</p>
+                                            <p style='margin-top:25px'>Gracias.</p>
+                                        </div>
+                                    </body>
+                                    </html>";
+
+                string htmlBody = string.Format(content, user.FirstName, tokenConfirmation);
+                var email = new MimeMessage();
+
+                email.From.Add(new MailboxAddress("In2sport", "krlosh1096@gmail.com"));
+                email.To.Add(MailboxAddress.Parse(user.Email));
+                email.Subject = "Correo Confirmacion";
+                email.Body = new TextPart(TextFormat.Html)
+                {
+                    Text = htmlBody
+                };
+
+                using (var smtp = new SmtpClient())
+                {
+                    try
+                    {
+                        await smtp.ConnectAsync("smtp.gmail.com", 587, SecureSocketOptions.StartTls);
+                        await smtp.AuthenticateAsync("krlosh1096@gmail.com", "hnysgpmhdbnouoyh"); 
+                        await smtp.SendAsync(email);
+
+                        return true;
+                    }
+                    catch (Exception ex)
+                    {
+                        throw;
+                    }
+                    finally
+                    {
+                        // Desconectar del servidor SMTP
+                        await smtp.DisconnectAsync(true);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"An error occurred: {ex.Message}");
+
+                return false;
+            }
+
         }
 
         #endregion

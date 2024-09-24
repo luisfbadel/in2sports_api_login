@@ -66,8 +66,22 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
+//app.Use(async (context, next) =>
+//{
+//    if (context.Request.Method == "OPTIONS")
+//    {
+//        context.Response.Headers.Add("Access-Control-Allow-Origin", builder.Configuration["OriginUrl"]);
+//        context.Response.Headers.Add("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE");
+//        context.Response.Headers.Add("Access-Control-Allow-Headers", "Authorization, X-API-KEY, Content-Type");
+//        context.Response.StatusCode = 200;
+//        return;
+//    }
+
+//    await next();
+//});
 // Registrar el middleware de API Key.
-app.UseMiddleware<ApiKeyMiddleware>();
+//app.UseMiddleware<ApiKeyMiddleware>();
 
 app.UseHttpsRedirection();
 app.UseCors("AllowAllOrigins");

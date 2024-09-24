@@ -10,7 +10,7 @@ namespace auth.in2sport.application.Services.UserServices.Request
         [EmailAddress]
         public string? Email { get; set; }
 
-        public string? TypeUser { get; set; }
+        public int? TypeUser { get; set; }
 
         public string? FirstName { get; set; }
 
@@ -20,6 +20,8 @@ namespace auth.in2sport.application.Services.UserServices.Request
 
         public string? SecondLastname { get; set; }
 
+        public DateTime Birthdate { get; set; }
+
         public int? TypeDocument { get; set; }
 
         public long? DocumentNumber { get; set; }
@@ -27,5 +29,8 @@ namespace auth.in2sport.application.Services.UserServices.Request
         public long? PhoneNumber { get; set; }
 
         public string? Address { get; set; }
+
+        public string? InstitutionName { get; set; }
+
     }
 }

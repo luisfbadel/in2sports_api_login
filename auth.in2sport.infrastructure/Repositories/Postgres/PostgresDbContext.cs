@@ -23,6 +23,7 @@ namespace auth.in2sport.infrastructure.Repositories.Postgres
         public DbSet<UserSubscription> UserSubscription { get; set; }
         public DbSet<AgeRange> AgeRange { get; set; }
         public DbSet<RefreshTokenHistory> RefreshTokenHistory { get; set; }
+        public DbSet<PaymentRecordInstitution> PaymentRecordInstitution { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -41,6 +42,9 @@ namespace auth.in2sport.infrastructure.Repositories.Postgres
 
             modelBuilder.Entity<RefreshTokenHistory>().HasKey(u => u.Id);
             modelBuilder.Entity<RefreshTokenHistory>(ConfigureRefreshTokenHistory);
+
+            modelBuilder.Entity<PaymentRecordInstitution>().HasKey(u => u.Id);
+            modelBuilder.Entity<PaymentRecordInstitution>(ConfigurePaymentRecordInstitution);
         }
 
         private void ConfigureUser(EntityTypeBuilder<Users> builder)
@@ -63,6 +67,9 @@ namespace auth.in2sport.infrastructure.Repositories.Postgres
             builder.Property(u => u.CreationDate).HasColumnName("creation_date");
             builder.Property(u => u.PasswordValidation).HasColumnName("password_validation");
             builder.Property(u => u.Birthdate).HasColumnName("birthdate");
+            builder.Property(u => u.InstitutionName).HasColumnName("institution_name");
+            builder.Property(u => u.EmailValidation).HasColumnName("email_validation");
+            builder.Property(u => u.TokenConfirmation).HasColumnName("token_confirmation");
         }
 
         private void ConfigureUserType(EntityTypeBuilder<UserType> builder)
@@ -104,6 +111,18 @@ namespace auth.in2sport.infrastructure.Repositories.Postgres
             builder.Property(u => u.RefreshToken).HasColumnName("refresh_token");
             builder.Property(u => u.CreationDate).HasColumnName("creation_date").HasColumnType("timestamp with time zone");
             builder.Property(u => u.ExpirationDate).HasColumnName("expiration_date").HasColumnType("timestamp with time zone");
+        }
+
+        private void ConfigurePaymentRecordInstitution(EntityTypeBuilder<PaymentRecordInstitution> builder)
+        {
+            builder.ToTable("payment_record_institution");
+
+            builder.Property(u => u.Id).HasColumnName("id");
+            builder.Property(u => u.StudentId).HasColumnName("student_id");
+            builder.Property(u => u.CourseId).HasColumnName("course_id");
+            builder.Property(u => u.InstitutionId).HasColumnName("institution_id");
+            builder.Property(u => u.StartDate).HasColumnName("start_date");
+            builder.Property(u => u.EndDate).HasColumnName("end_date");
         }
     }
 }

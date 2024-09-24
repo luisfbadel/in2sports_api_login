@@ -12,6 +12,7 @@
     <PackageReference Include="MailKit" Version="4.6.0" />
     <PackageReference Include="mercadopago-sdk" Version="2.3.8" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.1" />
+    <PackageReference Include="RestSharp" Version="112.0.0" />
   </ItemGroup>
 
   <ItemGroup>

@@ -11,6 +11,8 @@ namespace auth.in2sport.application.Services.UserServices.Request
 
         public decimal Price { get; set; }
 
+        public Guid institutionId { get; set; }
+
         public List<LeagueUser>? Data { get; set; }
     }
 

@@ -36,7 +36,6 @@ namespace auth.in2sport.api.Controllers
         #endregion
 
         [Route("api/v1/login/signIn")]
-        [EnableCors("AllowAllOrigins")]
         [HttpPost]
         public async Task<IActionResult> SignIn(SignInRequest request)
         {
@@ -73,15 +72,16 @@ namespace auth.in2sport.api.Controllers
         [Authorize]
         [Route("api/v1/login/update-password")]
         [HttpPatch]
-        public async Task<IActionResult> UpdatePassword(Guid userId, string newPassword)
+        public async Task<IActionResult> UpdatePassword(UpdatePasswodRequest request)
         {
             if (ModelState.IsValid)
             {
-                return Ok(await _loginService.UpdatePassword(userId, newPassword));
+                return Ok(await _loginService.UpdatePassword(request));
             }
             else return BadRequest();
         }
 
+        //[Authorize]
         [HttpPost]
         [Route("api/v1/login/get-refresh-token")]
         public async Task<IActionResult> GetRefreshToken(RefreshTokenRequest request)
@@ -89,6 +89,18 @@ namespace auth.in2sport.api.Controllers
             if (ModelState.IsValid)
             {
                 return Ok(await _loginService.GetRefreshToken(request));
+            }
+            else return BadRequest();
+        }
+
+        [Authorize]
+        [HttpPost]
+        [Route("api/v1/login/validate-email")]
+        public async Task<IActionResult> ValidateEmail(CodeKeyRequest request)
+        {
+            if (ModelState.IsValid)
+            {
+                return Ok(await _loginService.ValidateEmail(request));
             }
             else return BadRequest();
         }
