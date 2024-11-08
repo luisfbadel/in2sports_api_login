@@ -1,10 +1,8 @@
 ﻿using auth.in2sport.application.Services.LoginServices;
 using auth.in2sport.application.Services.LoginServices.Requests;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Cors;
+using auth.in2sport.application.Services.UserServices.Request;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore.Storage.ValueConversion.Internal;
-using System.IdentityModel.Tokens.Jwt;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace auth.in2sport.api.Controllers
 {
@@ -37,6 +35,7 @@ namespace auth.in2sport.api.Controllers
 
         [Route("api/v1/login/signIn")]
         [HttpPost]
+        //[EnableRateLimiting("FixedWindowPolicy")]
         public async Task<IActionResult> SignIn(SignInRequest request)
         {
             if (ModelState.IsValid)
@@ -48,6 +47,7 @@ namespace auth.in2sport.api.Controllers
 
         [Route("api/v1/login/signUp")]
         [HttpPost]
+        //[EnableRateLimiting("FixedWindowPolicy")]
         public async Task<IActionResult> SignUp(SignUpRequest request)
         {
             if (ModelState.IsValid)
@@ -57,9 +57,10 @@ namespace auth.in2sport.api.Controllers
             else return BadRequest();
         }
 
-        [Authorize]
+        //[Authorize]
         [Route("api/v1/login/user-registration")]
         [HttpPost]
+        //[EnableRateLimiting("FixedWindowPolicy")]
         public async Task<IActionResult> UserRegisteation(List<SignUpRequest> request)
         {
             if (ModelState.IsValid)
@@ -69,7 +70,7 @@ namespace auth.in2sport.api.Controllers
             else return BadRequest();
         }
 
-        [Authorize]
+        //[Authorize]
         [Route("api/v1/login/update-password")]
         [HttpPatch]
         public async Task<IActionResult> UpdatePassword(UpdatePasswodRequest request)
@@ -82,8 +83,9 @@ namespace auth.in2sport.api.Controllers
         }
 
         //[Authorize]
-        [HttpPost]
         [Route("api/v1/login/get-refresh-token")]
+        [HttpPost]
+        //[EnableRateLimiting("FixedWindowPolicy")]
         public async Task<IActionResult> GetRefreshToken(RefreshTokenRequest request)
         {
             if (ModelState.IsValid)
@@ -93,14 +95,39 @@ namespace auth.in2sport.api.Controllers
             else return BadRequest();
         }
 
-        [Authorize]
-        [HttpPost]
+        //[Authorize]
         [Route("api/v1/login/validate-email")]
+        [HttpPost]
+        //[EnableRateLimiting("FixedWindowPolicy")]
         public async Task<IActionResult> ValidateEmail(CodeKeyRequest request)
         {
             if (ModelState.IsValid)
             {
                 return Ok(await _loginService.ValidateEmail(request));
+            }
+            else return BadRequest();
+        }
+
+        [Route("api/v1/login/recover-password")]
+        [HttpPost]
+        //[EnableRateLimiting("FixedWindowPolicy")]
+        public async Task<IActionResult> RecoverPassword(RecoverPasswordRequest request)
+        {
+            if (ModelState.IsValid)
+            {
+                return Ok(await _loginService.RecoverPassword(request));
+            }
+            else return BadRequest();
+        }
+
+        [Route("api/v1/login/validate-code")]
+        [HttpPost]
+        //[EnableRateLimiting("FixedWindowPolicy")]
+        public async Task<IActionResult> ValidateCode(CodeKeyRequest request)
+        {
+            if (ModelState.IsValid)
+            {
+                return Ok(await _loginService.ValidateCode(request));
             }
             else return BadRequest();
         }

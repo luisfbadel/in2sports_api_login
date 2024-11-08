@@ -22,6 +22,10 @@
 
         public long? PhoneNumber { get; set; }
 
+        public string? Departament { get; set; }
+
+        public string? City { get; set; }
+
         public string? Address { get; set; }
 
         public int status { get; set; }

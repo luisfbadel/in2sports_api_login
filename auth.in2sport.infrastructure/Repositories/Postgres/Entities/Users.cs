@@ -26,6 +26,10 @@ namespace auth.in2sport.infrastructure.Repositories.Postgres.Entities
 
         public long? PhoneNumber { get; set; }
 
+        public string? Departament { get; set; }
+
+        public string? City { get; set; }
+
         public string? Address { get; set; }
 
         public int Status { get; set; }

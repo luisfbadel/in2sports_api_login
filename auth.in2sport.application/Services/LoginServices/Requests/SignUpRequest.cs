@@ -23,7 +23,6 @@ namespace auth.in2sport.application.Services.LoginServices.Requests
         [Required]
         public string? FirstName { get; set; }
 
-        [Required]
         public string? SecondName { get; set; }
 
         [Required]
@@ -44,7 +43,13 @@ namespace auth.in2sport.application.Services.LoginServices.Requests
         [Required]
         public long? PhoneNumber { get; set; }
 
-        
+        [Required]
+        public string? Departament { get; set; }
+
+        [Required]
+        public string? City { get; set; }
+
+        [Required]
         public string? Address { get; set; }
 
         [Required]

@@ -14,6 +14,9 @@ using System.Security.Cryptography;
 using System.Text;
 using MailKit.Net.Smtp;
 using Newtonsoft.Json.Linq;
+using Org.BouncyCastle.Asn1.Ocsp;
+using auth.in2sport.application.Services.UserServices.Request;
+using MercadoPago.Resource.User;
 
 namespace auth.in2sport.application.Services.LoginServices
 {
@@ -29,6 +32,7 @@ namespace auth.in2sport.application.Services.LoginServices
         /// </summary>
         private readonly IBaseRepository<Users> _loginRepository;
         private readonly IBaseRepository<RefreshTokenHistory> _refreshTokenHistoryRepository;
+        private readonly IBaseRepository<RecoverPassword> _recoverPassword;
         private readonly IConfiguration _config;
         private readonly IMapper _mapper;
 
@@ -42,10 +46,11 @@ namespace auth.in2sport.application.Services.LoginServices
         /// <param name="loginRepository"></param>
         /// <param name="config"></param>
         /// <exception cref="ArgumentNullException"></exception>
-        public LoginService(IBaseRepository<Users> loginRepository, IBaseRepository<RefreshTokenHistory> refreshTokenHistoryRepository, IConfiguration config, IMapper mapper)
+        public LoginService(IBaseRepository<Users> loginRepository, IBaseRepository<RefreshTokenHistory> refreshTokenHistoryRepository, IBaseRepository<RecoverPassword> refreshRecoverPassowrd, IConfiguration config, IMapper mapper)
         {
             _loginRepository = loginRepository ?? throw new ArgumentNullException(nameof(loginRepository));
             _refreshTokenHistoryRepository = refreshTokenHistoryRepository ?? throw new ArgumentNullException(nameof(refreshTokenHistoryRepository));
+            _recoverPassword = refreshRecoverPassowrd ?? throw new ArgumentNullException(nameof(refreshRecoverPassowrd));
             _config = config ?? throw new ArgumentNullException();
             _mapper = mapper ?? throw new ArgumentNullException();
         }
@@ -135,7 +140,7 @@ namespace auth.in2sport.application.Services.LoginServices
                         }
                         DateTime localDate = DateTime.UtcNow;
 
-                        var tokenConfirmation = GenerateSecureToken();
+                        //var tokenConfirmation = GenerateSecureToken();
 
                         var userEntity = new Users
                         {
@@ -156,14 +161,16 @@ namespace auth.in2sport.application.Services.LoginServices
                             Birthdate = (DateTime)request.Birthdate.ToUniversalTime(),
                             InstitutionName = request.InstitutionName,
                             EmailValidation = (int)request.EmailValidation,
-                            TokenConfirmation = tokenConfirmation,
+                            TokenConfirmation = null,
+                            Departament = request.Departament,
+                            City = request.City,
                         };
 
-                        var resultSendEmail = await SendEmail(userEntity, tokenConfirmation);
-                        if (!resultSendEmail)
-                        {
-                            throw new CreateFailedException("Error al enviar correo", 400);
-                        }
+                        //var resultSendEmail = await SendEmail(userEntity, tokenConfirmation);
+                        //if (!resultSendEmail)
+                        //{
+                        //    throw new CreateFailedException("Error al enviar correo", 400);
+                        //}
 
                         var result = await _loginRepository.CreateAsync(userEntity);
 
@@ -228,7 +235,9 @@ namespace auth.in2sport.application.Services.LoginServices
                                     Address = userRequest.Address,
                                     CreationDate = localDate,
                                     PasswordValidation = (int)userRequest.PasswordValidation,
-                                    Birthdate = userRequest.Birthdate
+                                    Birthdate = userRequest.Birthdate,
+                                    Departament = userRequest.Departament,
+                                    City = userRequest.City,
                                 };
 
                                 var result = await _loginRepository.CreateAsync(userEntity);
@@ -397,17 +406,154 @@ namespace auth.in2sport.application.Services.LoginServices
                     response.StatusCode = 200;
                     response.Message = "OK";
                     response.Data = data;
+                }
+                else
+                {
+                    data.user = _mapper.Map<UserResponse>(user);
+                    data.AuthToken = "";
+                    data.RefreshToken = "";
+
+                    response.StatusCode = 400;
+                    response.Message = "El codigo no es valido";
+                    response.Data = data;
+                }
+
+                return response;
+            }
+            catch (Exception ex)
+            {
+                throw new LoginFailedException($"Error durante la actualizacion: {ex.Message}", 500);
+            }
+        }
+
+        public async Task<BaseResponse<SignInResponse>> RecoverPassword(RecoverPasswordRequest request)
+        {
+            var response = new BaseResponse<SignInResponse>();
+            var data = new SignInResponse();
+
+            try
+            {
+                var user = await _loginRepository.GetByEmailAsync(request.Email);
+
+                if (user == null)
+                {
+                    response.StatusCode = 400;
+                    response.Message = "El usuario no existe";
+                    response.Data = data;
 
                     return response;
+                }
+
+                var recoverEmailExist = await _recoverPassword.GetByFilterAsync(entity => entity.UserId == user.Id);
+
+                var tokenConfirmation = "";
+
+                if (recoverEmailExist.Count == 0)
+                {
+                    tokenConfirmation = GenerateSecureToken();
+
+                    var recoverPassword = new RecoverPassword
+                    {
+                        UserId = user.Id,
+                        Email = user.Email,
+                        RecoverTime = DateTime.UtcNow.AddMinutes(1),
+                        Code = tokenConfirmation
+                    };
+
+                    var result = await _recoverPassword.CreateAsync(recoverPassword);
+
+                    var resultSendEmail = await SendEmail(user, tokenConfirmation);
+                    if (!resultSendEmail)
+                    {
+                        throw new CreateFailedException("Error al enviar correo", 400);
+                    }
+
+                } else { 
+                    if(DateTime.Now < recoverEmailExist[0].RecoverTime)
+                    {
+                        response.StatusCode = 400;
+                        response.Message = "Para generar un nuevo codigo debe esperar 3 min";
+
+                        return response;
+                    } else
+                    {
+                        tokenConfirmation = GenerateSecureToken();
+
+                        var newRecoverPassword = recoverEmailExist[0];
+
+                        newRecoverPassword.RecoverTime = DateTime.UtcNow.AddMinutes(3);
+                        newRecoverPassword.Code = tokenConfirmation;
+                            
+                        var result = await _recoverPassword.UpdateAsync(newRecoverPassword);
+
+                        var resultSendEmail = await SendEmail(user, tokenConfirmation);
+                        if (!resultSendEmail)
+                        {
+                            throw new CreateFailedException("Error al enviar correo", 400);
+                        }
+                    }
                 }
 
                 data.user = _mapper.Map<UserResponse>(user);
                 data.AuthToken = "";
                 data.RefreshToken = "";
 
-                response.StatusCode=200;
-                response.Message= "OK";
+                response.StatusCode = 200;
+                response.Message = "OK";
                 response.Data = data;
+
+                return response;
+            }
+            catch (Exception ex)
+            {
+                throw new LoginFailedException($"Error durante la actualizacion: {ex.Message}", 500);
+            }
+        }
+
+        public async Task<BaseResponse<SignInResponse>> ValidateCode(CodeKeyRequest request)
+        {
+            var response = new BaseResponse<SignInResponse>();
+            var data = new SignInResponse();
+
+            try
+            {
+                var recoverPasswordExist = await _recoverPassword.GetByFilterAsync(entity => entity.UserId == Guid.Parse(request.UserId));
+                var recoverPassword = recoverPasswordExist[0];
+                var user = await _loginRepository.GetByIdAsync(Guid.Parse(request.UserId));
+
+                if (DateTime.Now < recoverPassword.RecoverTime) {
+                    if (recoverPassword.Code != request.CodeKey)
+                    {
+
+                        data.user = _mapper.Map<UserResponse>(user);
+                        data.AuthToken = "";
+                        data.RefreshToken = "";
+
+                        response.StatusCode = 400;
+                        response.Message = "El codigo no es valido";
+                        response.Data = data;
+                    }
+                    else
+                    {
+                        data.user = _mapper.Map<UserResponse>(user);
+                        data.AuthToken = "";
+                        data.RefreshToken = "";
+
+                        response.StatusCode = 200;
+                        response.Message = "OK";
+                        response.Data = data;
+                    }
+                } else
+                {
+                    data.user = _mapper.Map<UserResponse>(user);
+                    data.AuthToken = "";
+                    data.RefreshToken = "";
+
+                    response.StatusCode = 400;
+                    response.Message = "El codigo ya expiro, genera un nuevo codigo";
+                    response.Data = data;
+                }
+               
 
                 return response;
             }

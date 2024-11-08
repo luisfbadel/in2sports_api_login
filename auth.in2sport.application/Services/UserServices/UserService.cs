@@ -16,6 +16,7 @@ using RestSharp;
 using MimeKit.Text;
 using MailKit.Net.Smtp;
 using Microsoft.Extensions.Primitives;
+using Newtonsoft.Json.Linq;
 
 namespace auth.in2sport.application.Services.UserServices
 {
@@ -34,6 +35,7 @@ namespace auth.in2sport.application.Services.UserServices
         private readonly IBaseRepository<UserType> _userTypeRepository;
         private readonly IBaseRepository<AgeRange> _ageRangeRepository;
         private readonly IBaseRepository<PaymentRecordInstitution> _paymentRecordInstitution;
+        private readonly IBaseRepository<SubscriptionVerification> _subscriptionVerification;
         private readonly IConfiguration _config;
         private readonly IMapper _mapper;
 
@@ -48,13 +50,14 @@ namespace auth.in2sport.application.Services.UserServices
         /// <param name="config"></param>
         /// <param name="mapper"></param>
         /// <exception cref="ArgumentNullException"></exception>
-        public UserService(IBaseRepository<Users> userRepository, IBaseRepository<UserType> userTypeRepository, IBaseRepository<UserSubscription> userSubscriptionRepository, IBaseRepository<AgeRange> ageRangeReposirity, IBaseRepository<PaymentRecordInstitution> paymentRecordInstitution, IConfiguration config, IMapper mapper)
+        public UserService(IBaseRepository<Users> userRepository, IBaseRepository<UserType> userTypeRepository, IBaseRepository<UserSubscription> userSubscriptionRepository, IBaseRepository<AgeRange> ageRangeReposirity, IBaseRepository<PaymentRecordInstitution> paymentRecordInstitution, IBaseRepository<SubscriptionVerification> subscriptionVerification, IConfiguration config, IMapper mapper)
         {
             _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
             _userTypeRepository = userTypeRepository ?? throw new ArgumentNullException(nameof(userTypeRepository));
             _userSubscriptionRepository = userSubscriptionRepository ?? throw new ArgumentNullException(nameof(userSubscriptionRepository));
             _ageRangeRepository = ageRangeReposirity ?? throw new ArgumentNullException(nameof(ageRangeReposirity));
             _paymentRecordInstitution = paymentRecordInstitution ?? throw new ArgumentNullException(nameof(paymentRecordInstitution));
+            _subscriptionVerification = subscriptionVerification ?? throw new ArgumentNullException(nameof(subscriptionVerification));
             _config = config ?? throw new ArgumentNullException();
             _mapper = mapper ?? throw new ArgumentNullException();
         }
@@ -205,6 +208,8 @@ namespace auth.in2sport.application.Services.UserServices
                     user.CreationDate = user.CreationDate.ToUniversalTime();
                     user.Birthdate = request.Birthdate.ToUniversalTime();
                     user.InstitutionName = request.InstitutionName;
+                    user.Departament = request.Departament;
+                    user.City = request.City;
 
                     var result = await _userRepository.UpdateAsync(user);
 
@@ -384,27 +389,41 @@ namespace auth.in2sport.application.Services.UserServices
             {
                 var user = await _userRepository.GetByIdAsync(request.UserId);
 
-                //var options = new RestClientOptions("https://8k5kz9.api.infobip.com")
-                //{
-                //    MaxTimeout = -1,
-                //};
-                //var client = new RestClient(options);
-                //var requestEmail = new RestRequest("/email/3/send", Method.Post);
-                //requestEmail.AddHeader("Authorization", "App ed7310401857e5fb447f3794aa6f6020-e57679ab-8886-49d1-b0cf-f046c2ae92b3");
-                //requestEmail.AddHeader("Content-Type", "multipart/form-data");
-                //requestEmail.AddHeader("Accept", "application/json");
-                //requestEmail.AlwaysMultipartFormData = true;
-                //requestEmail.AddParameter("from", "Carlos <gonsalez.carlos@live.com.mx>");
-                //requestEmail.AddParameter("subject", "Free trial");
-                //requestEmail.AddParameter("to", "{\"to\":\"krlosh1096@gmail.com\",\"placeholders\":{\"firstName\":\"Carlos\"}}");
-                //requestEmail.AddParameter("text", "Hi {{firstName}}, this is a test message from Infobip. Have a nice day!");
-                //RestResponse result = await client.ExecuteAsync(requestEmail);
-
-                var result = await SendEmail(request, user);
-                if (!result)
+                string content = @"
+                                    <!DOCTYPE html>
+                                    <html lang='es'>
+                                    <body>
+                                        <div style='width:600px;padding:20px;border:1px solid #DBDBDB;border-radius:12px;font-family:Sans-serif'>
+                                            <h1 style='color:#C76F61'>Ticket</h1>
+                                            <p style='margin-bottom:25px'>{0}</p>
+                                            <p style='margin-bottom:25px'>{1}</p>
+                                            <p style='margin-bottom:25px'>{2}</p>
+                                        </div>
+                                    </body>
+                                    </html>";
+                string userName = user.FirstName + " " + user.SecondName + " " + user.FirstLastname + " " + user.SecondLastname; 
+                string htmlBody = string.Format(content, request.Description, userName, user.Email);
+                var options = new RestClientOptions("https://8k5kz9.api.infobip.com")
                 {
-                    throw new UpdateFailedException("Error al enviar correo", 400);
-                }
+                    MaxTimeout = -1,
+                };
+                var client = new RestClient(options);
+                var requestEmail = new RestRequest("/email/3/send", Method.Post);
+                requestEmail.AddHeader("Authorization", "App ed7310401857e5fb447f3794aa6f6020-e57679ab-8886-49d1-b0cf-f046c2ae92b3");
+                requestEmail.AddHeader("Content-Type", "multipart/form-data");
+                requestEmail.AddHeader("Accept", "application/json");
+                requestEmail.AlwaysMultipartFormData = true;
+                requestEmail.AddParameter("from", "Carlos <gonsalez.carlos@live.com.mx>");
+                requestEmail.AddParameter("subject", request.Tittle);
+                requestEmail.AddParameter("to", "{\"to\":\"krlosh1096@gmail.com\",\"placeholders\":{\"firstName\":\"Carlos\"}}");
+                requestEmail.AddParameter("html", htmlBody);
+                RestResponse result = await client.ExecuteAsync(requestEmail);
+
+                //var result = await SendEmail(request, user);
+                //if (!result)
+                //{
+                //    throw new UpdateFailedException("Error al enviar correo", 400);
+                //}
 
 
                 response.StatusCode = 200;
@@ -711,7 +730,8 @@ namespace auth.in2sport.application.Services.UserServices
 
             try
             {
-                MercadoPagoConfig.AccessToken = "APP_USR-4724872471972926-071614-f524452911f8e9ad0d04b824811aec2d-1895340211";
+                //MercadoPagoConfig.AccessToken = _config["MercadoPago:AccessToken"];
+                MercadoPagoConfig.AccessToken = "APP_USR-8688261876484762-071113-727aa9906c5322115be7f5176ca51ddf-437698549";
                 var client = new PreapprovalClient();
 
                 var preapprovalRequest = new PreapprovalCreateRequest
@@ -730,6 +750,15 @@ namespace auth.in2sport.application.Services.UserServices
 
                 var preapproval = await client.CreateAsync(preapprovalRequest);
 
+                var subscriptionVerification = new SubscriptionVerification
+                {
+                    SubscriptionId = preapproval.Id,
+                    UserId = request.UserId,
+                    CourseId = request.CourseId,
+                };
+
+                var verificationCreation = await _subscriptionVerification.CreateAsync(subscriptionVerification);
+
                 response.StatusCode = 200;
                 response.Message = "OK";
                 response.Data = new
@@ -747,6 +776,75 @@ namespace auth.in2sport.application.Services.UserServices
             {
                 Console.WriteLine($"Error al hacer pago: {ex.Message}");
                 throw new FailedException($"Error inesperado al crear suscripcion: {ex.Message}", 500);
+            }
+        }
+
+        public async Task<BaseResponse<dynamic>> NotificationsSuscription(NotificationRequest request)
+        {
+            var response = new BaseResponse<dynamic>();
+
+            try
+            {
+                MercadoPagoConfig.AccessToken = "APP_USR-8688261876484762-071113-727aa9906c5322115be7f5176ca51ddf-437698549";
+
+                if (request.Type == "subscription_authorized_payment" && request.Action == "created")
+                {
+                    var client = new HttpClient();
+                    client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", "APP_USR-8688261876484762-071113-727aa9906c5322115be7f5176ca51ddf-437698549");
+                    //var subscripcionResponse = await client.GetAsync($"https://api.mercadopago.com/preapproval/{request.Data.Id}");
+                    var subscripcionPayment = await client.GetAsync($"https://api.mercadopago.com/authorized_payments/{request.Data.Id}");
+
+                    //var content = await subscripcionResponse.Content.ReadAsStringAsync();
+                    var contentPayment = await subscripcionPayment.Content.ReadAsStringAsync();
+
+                    var suscripcion = JObject.Parse(contentPayment);
+                    //var suscripcionPayment = JObject.Parse(contentPayment);
+
+
+                    //if (suscripcion["status"]?.ToString() == "authorized")
+                    //{
+                        //var subscriptioninfo = await _subscriptionVerification.GetByFilterAsync(entity => entity.SubscriptionId == request.Data.Id);
+                        var subscriptioninfo = await _subscriptionVerification.GetByFilterAsync(entity => entity.SubscriptionId == suscripcion["preapproval_id"].ToString());
+
+                        Guid userid = subscriptioninfo[0].UserId;
+                        Guid courseid = subscriptioninfo[0].CourseId;
+
+                        var validationsubsctiption = await _userSubscriptionRepository.GetByTwoFilterAsync(entity => entity.UserId == userid, entity => entity.CourseId == courseid);
+
+                        DateTime localdate = DateTime.UtcNow;
+
+                        if (validationsubsctiption.Count > 0)
+                        {
+                            UserSubscription subscription = validationsubsctiption[0];
+
+                            subscription.MonthsSubscribed = subscription.MonthsSubscribed + 1;
+                            subscription.LastDate = localdate;
+
+                            var result = await _userSubscriptionRepository.UpdateAsync(subscription);
+                        }
+                        else
+                        {
+                            UserSubscription subscription = new UserSubscription
+                            {
+                                UserId = userid,
+                                CourseId = courseid,
+                                MonthsSubscribed = 1,
+                                LastDate = localdate
+                            };
+                            var result = await _userSubscriptionRepository.CreateAsync(subscription);
+                        }
+
+                    //}
+                }
+
+                response.StatusCode = 200;
+                response.Message = "OK";
+                return response;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error al hacer ticket: {ex.Message}");
+                throw new FailedException($"Error inesperado al hacer ticket: {ex.Message}", 500);
             }
         }
 

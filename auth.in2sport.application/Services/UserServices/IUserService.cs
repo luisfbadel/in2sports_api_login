@@ -22,5 +22,6 @@ namespace auth.in2sport.application.Services.UserServices
         Task<BaseResponse<dynamic>> NotificationsMercadopago(NotificationRequest entity);
         Task<BaseResponse<dynamic>> NotificationsMercadopagoLeague(NotificationRequest entity);
         Task<BaseResponse<dynamic>> CreateSuscription(PreapprovalRequest entity);
+        Task<BaseResponse<dynamic>> NotificationsSuscription(NotificationRequest entity);
     }
 }
