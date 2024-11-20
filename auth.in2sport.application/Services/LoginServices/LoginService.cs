@@ -13,10 +13,7 @@ using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
 using MailKit.Net.Smtp;
-using Newtonsoft.Json.Linq;
-using Org.BouncyCastle.Asn1.Ocsp;
 using auth.in2sport.application.Services.UserServices.Request;
-using MercadoPago.Resource.User;
 
 namespace auth.in2sport.application.Services.LoginServices
 {

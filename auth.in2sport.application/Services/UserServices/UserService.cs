@@ -787,7 +787,7 @@ namespace auth.in2sport.application.Services.UserServices
             {
                 MercadoPagoConfig.AccessToken = "APP_USR-8688261876484762-071113-727aa9906c5322115be7f5176ca51ddf-437698549";
 
-                if (request.Type == "subscription_authorized_payment" && request.Action == "created")
+                if (request.Type == "subscription_authorized_payment" && (request.Action == "created" || request.Action == "updated"))
                 {
                     var client = new HttpClient();
                     client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", "APP_USR-8688261876484762-071113-727aa9906c5322115be7f5176ca51ddf-437698549");
@@ -801,8 +801,8 @@ namespace auth.in2sport.application.Services.UserServices
                     //var suscripcionPayment = JObject.Parse(contentPayment);
 
 
-                    //if (suscripcion["status"]?.ToString() == "authorized")
-                    //{
+                    if (suscripcion["payment"]?["status"]?.ToString() == "approved")
+                    {
                         //var subscriptioninfo = await _subscriptionVerification.GetByFilterAsync(entity => entity.SubscriptionId == request.Data.Id);
                         var subscriptioninfo = await _subscriptionVerification.GetByFilterAsync(entity => entity.SubscriptionId == suscripcion["preapproval_id"].ToString());
 
@@ -834,7 +834,7 @@ namespace auth.in2sport.application.Services.UserServices
                             var result = await _userSubscriptionRepository.CreateAsync(subscription);
                         }
 
-                    //}
+                    }
                 }
 
                 response.StatusCode = 200;

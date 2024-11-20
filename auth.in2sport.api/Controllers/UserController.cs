@@ -223,7 +223,7 @@ namespace auth.in2sport.api.Controllers
 
         [Route("api/v1/user/create_suscription")]
         [HttpPost]
-        [EnableRateLimiting("FixedWindowPolicy")]
+        //[EnableRateLimiting("FixedWindowPolicy")]
         public async Task<IActionResult> CreateSuscription(PreapprovalRequest request)
         {
             if (ModelState.IsValid)
@@ -235,7 +235,7 @@ namespace auth.in2sport.api.Controllers
 
         [Route("api/v1/user/notifications_suscription")]
         [HttpPost]
-        [EnableRateLimiting("FixedWindowPolicy")]
+        //[EnableRateLimiting("FixedWindowPolicy")]
         public async Task<IActionResult> NotificationsSuscription(NotificationRequest request)
         {
             if (ModelState.IsValid)
