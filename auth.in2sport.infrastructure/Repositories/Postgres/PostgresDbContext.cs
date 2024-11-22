@@ -20,12 +20,9 @@ namespace auth.in2sport.infrastructure.Repositories.Postgres
 
         public DbSet<Users> Users { get; set; }
         public DbSet<UserType> TypeUser { get; set; }
-        public DbSet<UserSubscription> UserSubscription { get; set; }
         public DbSet<AgeRange> AgeRange { get; set; }
         public DbSet<RefreshTokenHistory> RefreshTokenHistory { get; set; }
-        public DbSet<PaymentRecordInstitution> PaymentRecordInstitution { get; set; }
         public DbSet<RecoverPassword> RecoverPassword {  get; set; }
-        public DbSet<SubscriptionVerification> SubscriptionVerification { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -36,23 +33,14 @@ namespace auth.in2sport.infrastructure.Repositories.Postgres
             modelBuilder.Entity<UserType>().HasKey(u => u.Id);
             modelBuilder.Entity<UserType>(ConfigureUserType);
 
-            modelBuilder.Entity<UserSubscription>().HasKey(u => u.Id);
-            modelBuilder.Entity<UserSubscription>(ConfigureUserSubscription);
-
             modelBuilder.Entity<AgeRange>().HasKey(u => u.Id);
             modelBuilder.Entity<AgeRange>(ConfigureAgeRange);
 
             modelBuilder.Entity<RefreshTokenHistory>().HasKey(u => u.Id);
             modelBuilder.Entity<RefreshTokenHistory>(ConfigureRefreshTokenHistory);
 
-            modelBuilder.Entity<PaymentRecordInstitution>().HasKey(u => u.Id);
-            modelBuilder.Entity<PaymentRecordInstitution>(ConfigurePaymentRecordInstitution);
-
             modelBuilder.Entity<RecoverPassword>().HasKey(u => u.Id);
             modelBuilder.Entity<RecoverPassword>(ConfigureRecoverPassword);
-
-            modelBuilder.Entity<SubscriptionVerification>().HasKey(u => u.Id);
-            modelBuilder.Entity<SubscriptionVerification>(ConfigureSubscriptionVerification);
         }
 
         private void ConfigureUser(EntityTypeBuilder<Users> builder)
@@ -91,17 +79,6 @@ namespace auth.in2sport.infrastructure.Repositories.Postgres
             builder.Property(u => u.Status).HasColumnName("status");
         }
 
-        private void ConfigureUserSubscription(EntityTypeBuilder<UserSubscription> builder)
-        {
-            builder.ToTable("user_subscription");
-
-            builder.Property(u => u.Id).HasColumnName("id");
-            builder.Property(u => u.UserId).HasColumnName("user_id");
-            builder.Property(u => u.CourseId).HasColumnName("course_id");
-            builder.Property(u => u.MonthsSubscribed).HasColumnName("months_subscribed");
-            builder.Property(u => u.LastDate).HasColumnName("last_date");
-        }
-
         private void ConfigureAgeRange(EntityTypeBuilder<AgeRange> builder)
         {
             builder.ToTable("age_range");
@@ -123,18 +100,6 @@ namespace auth.in2sport.infrastructure.Repositories.Postgres
             builder.Property(u => u.ExpirationDate).HasColumnName("expiration_date").HasColumnType("timestamp with time zone");
         }
 
-        private void ConfigurePaymentRecordInstitution(EntityTypeBuilder<PaymentRecordInstitution> builder)
-        {
-            builder.ToTable("payment_record_institution");
-
-            builder.Property(u => u.Id).HasColumnName("id");
-            builder.Property(u => u.StudentId).HasColumnName("student_id");
-            builder.Property(u => u.CourseId).HasColumnName("course_id");
-            builder.Property(u => u.InstitutionId).HasColumnName("institution_id");
-            builder.Property(u => u.StartDate).HasColumnName("start_date");
-            builder.Property(u => u.EndDate).HasColumnName("end_date");
-        }
-
         private void ConfigureRecoverPassword(EntityTypeBuilder<RecoverPassword> builder)
         {
             builder.ToTable("recover_password");
@@ -144,16 +109,6 @@ namespace auth.in2sport.infrastructure.Repositories.Postgres
             builder.Property(u => u.Email).HasColumnName("email");
             builder.Property(u => u.RecoverTime).HasColumnName("recover_time").HasColumnType("timestamp with time zone");
             builder.Property(u => u.Code).HasColumnName("code");
-        }
-        
-        private void ConfigureSubscriptionVerification(EntityTypeBuilder<SubscriptionVerification> builder)
-        {
-            builder.ToTable("subscription_verification");
-
-            builder.Property(u => u.Id).HasColumnName("id");
-            builder.Property(u => u.SubscriptionId).HasColumnName("subscription_id");
-            builder.Property(u => u.UserId).HasColumnName("user_id");
-            builder.Property(u => u.CourseId).HasColumnName("course_id");
         }
     }
 }

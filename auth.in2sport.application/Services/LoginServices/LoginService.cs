@@ -69,7 +69,6 @@ namespace auth.in2sport.application.Services.LoginServices
                 }
                 try
                 {
-                    //byte[] hashedPassword = EncriptPasscode("k12345");
                     byte[] dataBytes = Convert.FromBase64String(request.Password);
                     bool validatorPassword = user!.Password!.SequenceEqual(dataBytes);
                     if (!validatorPassword)
@@ -123,7 +122,6 @@ namespace auth.in2sport.application.Services.LoginServices
                             response.Message = "El usuario ya existe";
 
                             return response;
-                            //throw new CreateFailedException("El usuario ya existe");
                         }
 
                         var resultDocumenTNumber = await _loginRepository.GetByFilterAsync(entity => entity.DocumentNumber == request.DocumentNumber);
@@ -137,7 +135,7 @@ namespace auth.in2sport.application.Services.LoginServices
                         }
                         DateTime localDate = DateTime.UtcNow;
 
-                        //var tokenConfirmation = GenerateSecureToken();
+                        var tokenConfirmation = GenerateSecureToken();
 
                         var userEntity = new Users
                         {
@@ -163,11 +161,11 @@ namespace auth.in2sport.application.Services.LoginServices
                             City = request.City,
                         };
 
-                        //var resultSendEmail = await SendEmail(userEntity, tokenConfirmation);
-                        //if (!resultSendEmail)
-                        //{
-                        //    throw new CreateFailedException("Error al enviar correo", 400);
-                        //}
+                        var resultSendEmail = await SendEmail(userEntity, tokenConfirmation);
+                        if (!resultSendEmail)
+                        {
+                            throw new CreateFailedException("Error al enviar correo", 400);
+                        }
 
                         var result = await _loginRepository.CreateAsync(userEntity);
 
@@ -281,7 +279,6 @@ namespace auth.in2sport.application.Services.LoginServices
                 }
                 try
                 {
-                    //byte[] hashedPassword = EncriptPasscode("k12345");
                     byte[] dataBytes = Convert.FromBase64String(request.NewPassword);
 
                     user.Password = dataBytes;
@@ -729,7 +726,6 @@ namespace auth.in2sport.application.Services.LoginServices
                     }
                     finally
                     {
-                        // Desconectar del servidor SMTP
                         await smtp.DisconnectAsync(true);
                     }
                 }

@@ -1,7 +1,6 @@
 ﻿using auth.in2sport.application.Services.LoginServices.Requests;
 using auth.in2sport.application.Services.LoginServices.Response;
 using auth.in2sport.application.Services.UserServices.Request;
-using auth.in2sport.infrastructure.Repositories.Postgres.Entities;
 
 namespace auth.in2sport.application.Services.LoginServices
 {

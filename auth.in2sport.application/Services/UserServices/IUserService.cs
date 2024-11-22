@@ -17,11 +17,5 @@ namespace auth.in2sport.application.Services.UserServices
         Task<BaseResponse<List<AgeRange>>> GetAgeRange();
         Task<BaseResponse<UserResponse>> Ticket(CreateTicketRequest entity);
         Task<BaseResponse<bool>> GetValidationUser(string email);
-        Task<BaseResponse<dynamic>> CreatePreference(PreferenceDtoRequest entity);
-        Task<BaseResponse<dynamic>> CreatePreferenceLeague(PreferenceLeagueDtoRequest entity);
-        Task<BaseResponse<dynamic>> NotificationsMercadopago(NotificationRequest entity);
-        Task<BaseResponse<dynamic>> NotificationsMercadopagoLeague(NotificationRequest entity);
-        Task<BaseResponse<dynamic>> CreateSuscription(PreapprovalRequest entity);
-        Task<BaseResponse<dynamic>> NotificationsSuscription(NotificationRequest entity);
     }
 }
