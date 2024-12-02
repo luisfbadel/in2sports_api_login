@@ -159,6 +159,7 @@ namespace auth.in2sport.application.Services.LoginServices
                             TokenConfirmation = null,
                             Departament = request.Departament,
                             City = request.City,
+                            AcceptedConditions = request.AcceptedConditions
                         };
 
                         var resultSendEmail = await SendEmail(userEntity, tokenConfirmation);
@@ -571,7 +572,7 @@ namespace auth.in2sport.application.Services.LoginServices
                 var token = new SecurityTokenDescriptor
                 {
                     Subject = claims,
-                    Expires = DateTime.UtcNow.AddMinutes(2),
+                    Expires = DateTime.UtcNow.AddMinutes(5),
                     SigningCredentials = credentials
 
                 };

@@ -32,7 +32,7 @@ namespace auth.in2sport.api.Controllers
 
         #endregion
 
-        //[Authorize]
+        [Authorize]
         [Route("api/v1/user/get-all")]
         [HttpGet]
         public async Task<IActionResult> GetAll(int page = 1, int pageSize = 30)
@@ -44,7 +44,7 @@ namespace auth.in2sport.api.Controllers
             return BadRequest();
         }
 
-        //[Authorize]
+        [Authorize]
         [Route("api/v1/user/update-user")]
         [HttpPatch]
         [EnableRateLimiting("FixedWindowPolicy")]
@@ -58,7 +58,6 @@ namespace auth.in2sport.api.Controllers
 
         }
 
-        //[Authorize]
         [Route("api/v1/user/activate-user")]
         [HttpPost]
         [EnableRateLimiting("FixedWindowPolicy")]
@@ -71,7 +70,6 @@ namespace auth.in2sport.api.Controllers
             return BadRequest();
         }
 
-        //[Authorize]
         [Route("api/v1/user/inactivate-user")]
         [HttpPost]
         [EnableRateLimiting("FixedWindowPolicy")]
@@ -84,7 +82,7 @@ namespace auth.in2sport.api.Controllers
             return BadRequest();
         }
 
-        //[Authorize]
+        [Authorize]
         [Route("api/v1/user/get-by-filter")]
         [HttpPost]
         [EnableRateLimiting("FixedWindowPolicy")]
@@ -97,7 +95,6 @@ namespace auth.in2sport.api.Controllers
             return BadRequest();
         }
 
-        //[Authorize]
         [Route("api/v1/user/get-registered-users")]
         [HttpGet]
         [EnableRateLimiting("FixedWindowPolicy")]
@@ -110,7 +107,7 @@ namespace auth.in2sport.api.Controllers
             return BadRequest();
         }
 
-        //[Authorize]
+        [Authorize]
         [Route("api/v1/user/get-users-status")]
         [HttpGet]
         [EnableRateLimiting("FixedWindowPolicy")]
@@ -123,7 +120,6 @@ namespace auth.in2sport.api.Controllers
             return BadRequest();
         }
 
-        //[Authorize]
         [Route("api/v1/user/get-user-types")]
         [HttpGet]
         public async Task<IActionResult> GetUseTypes()
@@ -135,7 +131,6 @@ namespace auth.in2sport.api.Controllers
             return BadRequest();
         }
 
-        //[Authorize]
         [Route("api/v1/user/get-age-range")]
         [HttpGet]
         public async Task<IActionResult> GetAgeRange()
@@ -147,7 +142,7 @@ namespace auth.in2sport.api.Controllers
             return BadRequest();
         }
 
-        //[Authorize]
+        [Authorize]
         [Route("api/v1/user/ticket")]
         [HttpPost]
         public async Task<IActionResult> Ticket(CreateTicketRequest request)
@@ -159,7 +154,6 @@ namespace auth.in2sport.api.Controllers
             return BadRequest();
         }
 
-        //[Authorize]
         [Route("api/v1/user/get-validation-user")]
         [HttpGet]
         public async Task<IActionResult> GetValidationUser(string email)

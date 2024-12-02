@@ -45,5 +45,7 @@ namespace auth.in2sport.infrastructure.Repositories.Postgres.Entities
         public int EmailValidation { get; set; }
 
         public string? TokenConfirmation {  get; set; }
+
+        public bool? AcceptedConditions { get; set; }
     }
 }

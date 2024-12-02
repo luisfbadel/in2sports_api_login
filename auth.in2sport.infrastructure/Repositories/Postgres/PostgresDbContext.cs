@@ -68,6 +68,7 @@ namespace auth.in2sport.infrastructure.Repositories.Postgres
             builder.Property(u => u.TokenConfirmation).HasColumnName("token_confirmation");
             builder.Property(u => u.Departament).HasColumnName("departament");
             builder.Property(u => u.City).HasColumnName("city");
+            builder.Property(u => u.AcceptedConditions).HasColumnName("accepted_conditions");
         }
 
         private void ConfigureUserType(EntityTypeBuilder<UserType> builder)

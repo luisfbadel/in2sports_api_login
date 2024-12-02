@@ -63,5 +63,7 @@ namespace auth.in2sport.application.Services.LoginServices.Requests
         [Required]
         public int? EmailValidation { get; set; }
 
+        [Required]
+        public bool? AcceptedConditions { get; set; }
     }
 }

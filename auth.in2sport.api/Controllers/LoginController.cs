@@ -82,10 +82,9 @@ namespace auth.in2sport.api.Controllers
             else return BadRequest();
         }
 
-        [Authorize]
         [Route("api/v1/login/get-refresh-token")]
         [HttpPost]
-        [EnableRateLimiting("FixedWindowPolicy")]
+        //[EnableRateLimiting("FixedWindowPolicy")]
         public async Task<IActionResult> GetRefreshToken(RefreshTokenRequest request)
         {
             if (ModelState.IsValid)
