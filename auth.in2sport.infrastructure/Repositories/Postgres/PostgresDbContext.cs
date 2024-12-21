@@ -87,6 +87,7 @@ namespace auth.in2sport.infrastructure.Repositories.Postgres
             builder.Property(u => u.Id).HasColumnName("id");
             builder.Property(u => u.StartAge).HasColumnName("start_age");
             builder.Property(u => u.EndAge).HasColumnName("end_age");
+            builder.Property(u => u.Description).HasColumnName("description");
         }
 
         private void ConfigureRefreshTokenHistory(EntityTypeBuilder<RefreshTokenHistory> builder)

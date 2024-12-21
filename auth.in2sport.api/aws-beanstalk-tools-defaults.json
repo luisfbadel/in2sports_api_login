@@ -1,11 +1,11 @@
 
 {
-    "region" : "us-west-1",
+    "region" : "us-east-1",
     "configuration" : "Debug",
     "framework"     : "net8.0",
     "self-contained" : true,
-    "application"    : "in2sport.auth",
-    "environment"    : "In2sportauth-env",
+    "application"    : "in2sport-auth",
+    "environment"    : "in2sportauth-env",
     "enable-xray"    : false,
     "enhanced-health-type" : "enhanced",
     "additional-options"   : "",

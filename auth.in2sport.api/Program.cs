@@ -90,8 +90,8 @@ app.Use(async (context, next) =>
 {
     if (context.Request.Method == "OPTIONS")
     {
-        context.Response.Headers.Add("Access-Control-Allow-Origin", builder.Configuration["OriginUrl"]);
-        context.Response.Headers.Add("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE");
+        context.Response.Headers.Add("Access-Control-Allow-Origin", "*");
+        context.Response.Headers.Add("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE");
         context.Response.Headers.Add("Access-Control-Allow-Headers", "Authorization, X-API-KEY, Content-Type");
         context.Response.StatusCode = 200;
         return;

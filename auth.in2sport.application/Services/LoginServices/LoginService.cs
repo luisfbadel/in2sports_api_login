@@ -65,7 +65,9 @@ namespace auth.in2sport.application.Services.LoginServices
 
                 if (user == null)
                 {
-                    throw new LoginFailedException("El usuario no existe");
+                    response.StatusCode = 400;
+                    response.Message = "El usuario no existe";
+                    return response;
                 }
                 try
                 {
@@ -133,7 +135,7 @@ namespace auth.in2sport.application.Services.LoginServices
 
                             return response;
                         }
-                        DateTime localDate = DateTime.UtcNow;
+                        DateTime localDate = DateTime.UtcNow.AddHours(-5);
 
                         var tokenConfirmation = GenerateSecureToken();
 
@@ -156,7 +158,7 @@ namespace auth.in2sport.application.Services.LoginServices
                             Birthdate = (DateTime)request.Birthdate.ToUniversalTime(),
                             InstitutionName = request.InstitutionName,
                             EmailValidation = (int)request.EmailValidation,
-                            TokenConfirmation = null,
+                            TokenConfirmation = tokenConfirmation,
                             Departament = request.Departament,
                             City = request.City,
                             AcceptedConditions = request.AcceptedConditions
@@ -211,7 +213,7 @@ namespace auth.in2sport.application.Services.LoginServices
                         {
                             
                             var user = await _loginRepository.GetByEmailAsync(userRequest.Email!);
-                            DateTime localDate = DateTime.UtcNow;
+                            DateTime localDate = DateTime.UtcNow.AddHours(-5);
 
                             if (user == null)
                             {
@@ -429,6 +431,7 @@ namespace auth.in2sport.application.Services.LoginServices
             try
             {
                 var user = await _loginRepository.GetByEmailAsync(request.Email);
+                var currentlyHour = DateTime.UtcNow;
 
                 if (user == null)
                 {
@@ -451,7 +454,7 @@ namespace auth.in2sport.application.Services.LoginServices
                     {
                         UserId = user.Id,
                         Email = user.Email,
-                        RecoverTime = DateTime.UtcNow.AddMinutes(1),
+                        RecoverTime = currentlyHour.AddMinutes(5),
                         Code = tokenConfirmation
                     };
 
@@ -464,10 +467,10 @@ namespace auth.in2sport.application.Services.LoginServices
                     }
 
                 } else { 
-                    if(DateTime.Now < recoverEmailExist[0].RecoverTime)
+                    if(DateTime.UtcNow < recoverEmailExist[0].RecoverTime)
                     {
                         response.StatusCode = 400;
-                        response.Message = "Para generar un nuevo codigo debe esperar 3 min";
+                        response.Message = "Para generar un nuevo codigo debe esperar 5 min";
 
                         return response;
                     } else
@@ -476,7 +479,7 @@ namespace auth.in2sport.application.Services.LoginServices
 
                         var newRecoverPassword = recoverEmailExist[0];
 
-                        newRecoverPassword.RecoverTime = DateTime.UtcNow.AddMinutes(3);
+                        newRecoverPassword.RecoverTime = currentlyHour.AddMinutes(5);
                         newRecoverPassword.Code = tokenConfirmation;
                             
                         var result = await _recoverPassword.UpdateAsync(newRecoverPassword);
@@ -566,13 +569,15 @@ namespace auth.in2sport.application.Services.LoginServices
             {
                 var claims = new ClaimsIdentity();
                 claims.AddClaim(new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()));
+                var currentlyHour = DateTime.UtcNow;
 
                 var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]!));
                 var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
                 var token = new SecurityTokenDescriptor
                 {
                     Subject = claims,
-                    Expires = DateTime.UtcNow.AddMinutes(5),
+                    NotBefore = currentlyHour,
+                    Expires = currentlyHour.AddMinutes(30),
                     SigningCredentials = credentials
 
                 };
@@ -640,6 +645,7 @@ namespace auth.in2sport.application.Services.LoginServices
         {
 
             var refreshTokenFinded = await _refreshTokenHistoryRepository.GetByFilterAsync(entity => entity.UserId == user.Id);
+            var currentlyHour = DateTime.UtcNow.AddHours(-5);
 
             bool result;
             if (refreshTokenFinded.Count == 0)
@@ -649,8 +655,8 @@ namespace auth.in2sport.application.Services.LoginServices
                     UserId = user.Id,
                     Token = token,
                     RefreshToken = refreshToken,
-                    CreationDate = DateTime.UtcNow,
-                    ExpirationDate = DateTime.UtcNow.AddMinutes(10)
+                    CreationDate = currentlyHour,
+                    ExpirationDate = currentlyHour.AddMinutes(30)
                 };
 
                 result = await _refreshTokenHistoryRepository.CreateAsync(refreshTokenHistory);
@@ -661,8 +667,8 @@ namespace auth.in2sport.application.Services.LoginServices
 
                 userRefreshToken.Token = token;
                 userRefreshToken.RefreshToken = refreshToken;
-                userRefreshToken.CreationDate = DateTime.UtcNow;
-                userRefreshToken.ExpirationDate = DateTime.UtcNow.AddMinutes(10);
+                userRefreshToken.CreationDate = currentlyHour;
+                userRefreshToken.ExpirationDate = currentlyHour.AddMinutes(30);
 
                 result = await _refreshTokenHistoryRepository.UpdateAsync(userRefreshToken);
             }
