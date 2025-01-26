@@ -82,11 +82,13 @@ namespace auth.in2sport.application.Services.LoginServices
 
                     string token = Authorize(user);
                     string refreshTokenCreated = GenerarRefreshToken();
+
+                    var result = await KeepRefreshTokenHistory(user, token, refreshTokenCreated);
+
                     tokens.user = _mapper.Map<UserResponse>(user);
                     tokens.AuthToken = token;
                     tokens.RefreshToken = refreshTokenCreated;
 
-                    var result = await KeepRefreshTokenHistory(user, token, refreshTokenCreated);
 
                     response.StatusCode = 200;
                     response.Message = "OK";
@@ -584,7 +586,7 @@ namespace auth.in2sport.application.Services.LoginServices
                 var tokenHandler = new JwtSecurityTokenHandler();
                 var tokenConfig = tokenHandler.CreateToken(token);
 
-                return new JwtSecurityTokenHandler().WriteToken(tokenConfig);
+                return tokenHandler.WriteToken(tokenConfig);
             }
             catch (ArgumentNullException ex)
             {

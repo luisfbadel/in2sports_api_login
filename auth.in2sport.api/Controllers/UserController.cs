@@ -82,7 +82,6 @@ namespace auth.in2sport.api.Controllers
             return BadRequest();
         }
 
-        [Authorize]
         [Route("api/v1/user/get-by-filter")]
         [HttpPost]
         [EnableRateLimiting("FixedWindowPolicy")]

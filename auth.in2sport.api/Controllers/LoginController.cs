@@ -70,7 +70,6 @@ namespace auth.in2sport.api.Controllers
             else return BadRequest();
         }
 
-        [Authorize]
         [Route("api/v1/login/update-password")]
         [HttpPatch]
         public async Task<IActionResult> UpdatePassword(UpdatePasswodRequest request)
@@ -84,7 +83,6 @@ namespace auth.in2sport.api.Controllers
 
         [Route("api/v1/login/get-refresh-token")]
         [HttpPost]
-        //[EnableRateLimiting("FixedWindowPolicy")]
         public async Task<IActionResult> GetRefreshToken(RefreshTokenRequest request)
         {
             if (ModelState.IsValid)
@@ -94,7 +92,6 @@ namespace auth.in2sport.api.Controllers
             else return BadRequest();
         }
 
-        [Authorize]
         [Route("api/v1/login/validate-email")]
         [HttpPost]
         [EnableRateLimiting("FixedWindowPolicy")]
