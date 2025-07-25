@@ -9,6 +9,7 @@ using MailKit.Security;
 using RestSharp;
 using MimeKit.Text;
 using MailKit.Net.Smtp;
+using System.Text.RegularExpressions;
 
 namespace auth.in2sport.application.Services.UserServices
 {
@@ -70,7 +71,6 @@ namespace auth.in2sport.application.Services.UserServices
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error al obtener la lista de usuarios: {ex.Message}");
                 throw new UserFailedException($"Error inesperado al obtener la lista de usuarios: {ex.Message}", 500);
             }
         }
@@ -104,14 +104,12 @@ namespace auth.in2sport.application.Services.UserServices
                     catch (Exception ex)
                     {
                         transaction.Rollback();
-                        Console.WriteLine($"Error durante la activación del usuario: {ex.Message}");
                         throw new UpdateFailedException($"EError inesperado al inactivar el usuario: {ex.Message}", 500);
                     }
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error de transacción: {ex.Message}");
                 throw new UpdateFailedException($"Error inesperado durante la transacción: {ex.Message}", 500);
             }
         }
@@ -146,14 +144,12 @@ namespace auth.in2sport.application.Services.UserServices
                     catch (Exception ex)
                     {
                         transaction.Rollback();
-                        Console.WriteLine($"Error durante la inactivación del usuario: {ex.Message}");
                         throw new UpdateFailedException($"EError inesperado al inactivar el usuario: {ex.Message}", 500);
                     }
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error de transacción: {ex.Message}");
                 throw new UpdateFailedException($"Error inesperado durante la transacción: {ex.Message}", 500);
             }
         }
@@ -184,12 +180,12 @@ namespace auth.in2sport.application.Services.UserServices
                         return response;
                     }
 
-                    user.FirstName = request.FirstName;
-                    user.SecondName = request.SecondName;
-                    user.FirstLastname = request.FirstLastname;
-                    user.SecondLastname = request.SecondLastname;
-                    user.DocumentNumber = request.DocumentNumber;
-                    user.PhoneNumber = request.PhoneNumber;
+                    user.FirstName = RemoveAllSpaces(request.FirstName);
+                    user.SecondName = RemoveAllSpaces(request.SecondName);
+                    user.FirstLastname = RemoveAllSpaces(request.FirstLastname);
+                    user.SecondLastname = RemoveAllSpaces(request.SecondLastname);
+                    user.DocumentNumber = long.Parse(KeepOnlyDigits(request.DocumentNumber));
+                    user.PhoneNumber = long.Parse(KeepOnlyDigits(request.PhoneNumber));
                     user.Address = request.Address;
                     user.CreationDate = user.CreationDate.ToUniversalTime();
                     user.Birthdate = request.Birthdate.ToUniversalTime();
@@ -247,7 +243,6 @@ namespace auth.in2sport.application.Services.UserServices
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error al obtener la lista de usuarios: {ex.Message}");
                 throw new FailedException($"Error inesperado al obtener la lista de usuarios: {ex.Message}", 500);
             }
         }
@@ -290,7 +285,6 @@ namespace auth.in2sport.application.Services.UserServices
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error al obtener datos: {ex.Message}");
                 throw new FailedException($"Error inesperado al obtener datos: {ex.Message}", 500);
             }
         }
@@ -319,7 +313,6 @@ namespace auth.in2sport.application.Services.UserServices
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error al obtener datos: {ex.Message}");
                 throw new FailedException($"Error inesperado al obtener datos: {ex.Message}", 500);
             }
         }
@@ -340,7 +333,6 @@ namespace auth.in2sport.application.Services.UserServices
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error al obtener datos: {ex.Message}");
                 throw new FailedException($"Error inesperado al obtener datos: {ex.Message}", 500);
             }
         }
@@ -361,7 +353,6 @@ namespace auth.in2sport.application.Services.UserServices
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error al obtener datos: {ex.Message}");
                 throw new FailedException($"Error inesperado al obtener datos: {ex.Message}", 500);
             }
         }
@@ -374,47 +365,63 @@ namespace auth.in2sport.application.Services.UserServices
             {
                 var user = await _userRepository.GetByIdAsync(request.UserId);
 
+                // Construir HTML
                 string content = @"
-                                    <!DOCTYPE html>
-                                    <html lang='es'>
-                                    <body>
-                                        <div style='width:600px;padding:20px;border:1px solid #DBDBDB;border-radius:12px;font-family:Sans-serif'>
-                                            <h1 style='color:#C76F61'>Ticket</h1>
-                                            <p style='margin-bottom:25px'>{0}</p>
-                                            <p style='margin-bottom:25px'>{1}</p>
-                                            <p style='margin-bottom:25px'>{2}</p>
-                                        </div>
-                                    </body>
-                                    </html>";
-                string userName = user.FirstName + " " + user.SecondName + " " + user.FirstLastname + " " + user.SecondLastname; 
+                    <!DOCTYPE html>
+                    <html lang='es'>
+                    <body>
+                        <div style='width:600px;padding:20px;border:1px solid #DBDBDB;border-radius:12px;font-family:Sans-serif'>
+                            <h1 style='color:#C76F61'>Nuevo Ticket</h1>
+                            <p style='margin-bottom:25px'><b>Descripción:</b> {0}</p>
+                            <p style='margin-bottom:25px'><b>Usuario:</b> {1}</p>
+                            <p style='margin-bottom:25px'><b>Email:</b> {2}</p>
+                        </div>
+                    </body>
+                    </html>";
+
+                string userName = $"{user.FirstName} {user.SecondName} {user.FirstLastname} {user.SecondLastname}";
                 string htmlBody = string.Format(content, request.Description, userName, user.Email);
-                var options = new RestClientOptions("https://8k5kz9.api.infobip.com")
+
+                var email = new MimeMessage();
+                var fromEmail = _config["SmtpConfig:Username"];
+
+                email.From.Add(new MailboxAddress("In2sport", fromEmail));
+                email.To.Add(MailboxAddress.Parse("in2sports08@gmail.com"));
+                email.Subject = request.Tittle;
+
+                email.Body = new TextPart(TextFormat.Html)
                 {
-                    MaxTimeout = -1,
+                    Text = htmlBody
                 };
-                var client = new RestClient(options);
-                var requestEmail = new RestRequest("/email/3/send", Method.Post);
-                requestEmail.AddHeader("Authorization", "App ed7310401857e5fb447f3794aa6f6020-e57679ab-8886-49d1-b0cf-f046c2ae92b3");
-                requestEmail.AddHeader("Content-Type", "multipart/form-data");
-                requestEmail.AddHeader("Accept", "application/json");
-                requestEmail.AlwaysMultipartFormData = true;
-                requestEmail.AddParameter("from", "Carlos <gonsalez.carlos@live.com.mx>");
-                requestEmail.AddParameter("subject", request.Tittle);
-                requestEmail.AddParameter("to", "{\"to\":\"krlosh1096@gmail.com\",\"placeholders\":{\"firstName\":\"Carlos\"}}");
-                requestEmail.AddParameter("html", htmlBody);
-                RestResponse result = await client.ExecuteAsync(requestEmail);
+
+                using (var smtp = new SmtpClient())
+                {
+                    try
+                    {
+                        await smtp.ConnectAsync(_config["SmtpConfig:Host"], 587, SecureSocketOptions.StartTls);
+                        await smtp.AuthenticateAsync(fromEmail, _config["SmtpConfig:Password"]);
+                        await smtp.SendAsync(email);
+                    }
+                    catch (Exception ex)
+                    {
+                        throw new FailedException($"Error al enviar ticket: {ex.Message}", 500);
+                    }
+                    finally
+                    {
+                        await smtp.DisconnectAsync(true);
+                    }
+                }
 
                 response.StatusCode = 200;
-                response.Message = "OK";
+                response.Message = "Ticket enviado correctamente.";
                 return response;
-
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error al hacer ticket: {ex.Message}");
                 throw new FailedException($"Error inesperado al hacer ticket: {ex.Message}", 500);
             }
         }
+
 
         public async Task<BaseResponse<bool>> GetValidationUser(string email)
         {
@@ -437,29 +444,11 @@ namespace auth.in2sport.application.Services.UserServices
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error al obtener validacion: {ex.Message}");
                 throw new FailedException($"Error inesperado al obtener validacion: {ex.Message}", 500);
             }
         }
 
         #region Private Methods
-
-        private void UpdateChangedProperties(Users originalUser, UpdateUserRequest request)
-        {
-            var propertyInfos = typeof(UpdateUserRequest).GetProperties();
-
-            foreach (var propertyInfo in propertyInfos)
-            {
-                var propertyName = propertyInfo.Name;
-                var originalValue = originalUser.GetType().GetProperty(propertyName)?.GetValue(originalUser, null);
-                var requestValue = propertyInfo.GetValue(request, null);
-
-                if (originalValue != null && !originalValue.Equals(requestValue))
-                {
-                    originalUser.GetType().GetProperty(propertyName)?.SetValue(originalUser, requestValue);
-                }
-            }
-        }
 
         public async Task<bool> SendEmail(CreateTicketRequest request, Users user)
         {
@@ -481,8 +470,8 @@ namespace auth.in2sport.application.Services.UserServices
                 string url = "https://www.youtube.com/";
                 string htmlBody = string.Format(content, user.FirstName, url);
                 var email = new MimeMessage();
-
-                email.From.Add(new MailboxAddress("In2sport", "krlosh1096@gmail.com"));
+                var fromEmail = _config["SmtpConfig:Username"];
+                email.From.Add(new MailboxAddress("In2sport", fromEmail));
                 email.To.Add(MailboxAddress.Parse(user.Email));
                 email.Subject = "Correo Confirmacion";
                 email.Body = new TextPart(TextFormat.Html)
@@ -494,8 +483,8 @@ namespace auth.in2sport.application.Services.UserServices
                 {
                     try
                     {
-                        await smtp.ConnectAsync("smtp.gmail.com", 587, SecureSocketOptions.StartTls);
-                        await smtp.AuthenticateAsync("krlosh1096@gmail.com", "hnysgpmhdbnouoyh");
+                        await smtp.ConnectAsync(_config["SmtpConfig:Host"], 587, SecureSocketOptions.StartTls);
+                        await smtp.AuthenticateAsync(fromEmail, _config["SmtpConfig:Password"]);
                         await smtp.SendAsync(email);
 
                         return true;
@@ -512,10 +501,26 @@ namespace auth.in2sport.application.Services.UserServices
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"An error occurred: {ex.Message}");
-                return false;
+                throw new UserFailedException($"Error al enviar correo: {ex.Message}", 500);
             }
             
+        }
+
+        private string? RemoveAllSpaces(object? input)
+        {
+            if (input == null) return null;
+
+            var str = input.ToString();
+            return string.IsNullOrWhiteSpace(str) ? null : Regex.Replace(str, @"[^a-zA-Z]", "");
+        }
+
+        public static string? KeepOnlyDigits(object? input)
+        {
+            if (input == null) return null;
+
+            var str = input.ToString();
+            if (string.IsNullOrWhiteSpace(str)) return null;
+            return Regex.Replace(str, @"\D", "");
         }
 
         #endregion

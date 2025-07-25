@@ -14,6 +14,7 @@ using System.Security.Cryptography;
 using System.Text;
 using MailKit.Net.Smtp;
 using auth.in2sport.application.Services.UserServices.Request;
+using System.Text.RegularExpressions;
 
 namespace auth.in2sport.application.Services.LoginServices
 {
@@ -143,17 +144,17 @@ namespace auth.in2sport.application.Services.LoginServices
 
                         var userEntity = new Users
                         {
-                            Email = request.Email,
+                            Email = RemoveAllSpaces(request.Email),
                             Password = EncriptPasscode(request.Password!),
                             Status = (int)request.Status,
                             TypeUser = request.TypeUser,
-                            FirstName = request.FirstName,
-                            SecondName = request.SecondName,
-                            FirstLastname = request.FirstLastname,
-                            SecondLastname = request.SecondLastname,
+                            FirstName = RemoveAllSpaces(request.FirstName),
+                            SecondName = RemoveAllSpaces(request.SecondName),
+                            FirstLastname = RemoveAllSpaces(request.FirstLastname),
+                            SecondLastname = RemoveAllSpaces(request.SecondLastname),
                             TypeDocument = request.TypeDocument,
-                            DocumentNumber = request.DocumentNumber,
-                            PhoneNumber = request.PhoneNumber,
+                            DocumentNumber = long.Parse(KeepOnlyDigits(request.DocumentNumber)),
+                            PhoneNumber = long.Parse(KeepOnlyDigits(request.PhoneNumber)),
                             Address = request.Address,
                             CreationDate = localDate,
                             PasswordValidation = (int)request.PasswordValidation,
@@ -166,7 +167,7 @@ namespace auth.in2sport.application.Services.LoginServices
                             AcceptedConditions = request.AcceptedConditions
                         };
 
-                        var resultSendEmail = await SendEmail(userEntity, tokenConfirmation);
+                        var resultSendEmail = await SendEmailRegister(userEntity, tokenConfirmation);
                         if (!resultSendEmail)
                         {
                             throw new CreateFailedException("Error al enviar correo", 400);
@@ -221,17 +222,17 @@ namespace auth.in2sport.application.Services.LoginServices
                             {
                                 var userEntity = new Users
                                 {
-                                    Email = userRequest.Email,
+                                    Email = RemoveAllSpaces(userRequest.Email),
                                     Password = EncriptPasscode(userRequest.Password!),
                                     Status = (int)userRequest.Status,
                                     TypeUser = userRequest.TypeUser,
-                                    FirstName = userRequest.FirstName,
-                                    SecondName = userRequest.SecondName,
-                                    FirstLastname = userRequest.FirstLastname,
-                                    SecondLastname = userRequest.SecondLastname,
+                                    FirstName = RemoveAllSpaces(userRequest.FirstName),
+                                    SecondName = RemoveAllSpaces(userRequest.SecondName),
+                                    FirstLastname = RemoveAllSpaces(userRequest.FirstLastname),
+                                    SecondLastname = RemoveAllSpaces(userRequest.SecondLastname),
                                     TypeDocument = userRequest.TypeDocument,
-                                    DocumentNumber = userRequest.DocumentNumber,
-                                    PhoneNumber = userRequest.PhoneNumber,
+                                    DocumentNumber = long.Parse(KeepOnlyDigits(userRequest.DocumentNumber)),
+                                    PhoneNumber = long.Parse(KeepOnlyDigits(userRequest.PhoneNumber)),
                                     Address = userRequest.Address,
                                     CreationDate = localDate,
                                     PasswordValidation = (int)userRequest.PasswordValidation,
@@ -462,7 +463,7 @@ namespace auth.in2sport.application.Services.LoginServices
 
                     var result = await _recoverPassword.CreateAsync(recoverPassword);
 
-                    var resultSendEmail = await SendEmail(user, tokenConfirmation);
+                    var resultSendEmail = await SendEmailRecoverPassword(user, tokenConfirmation);
                     if (!resultSendEmail)
                     {
                         throw new CreateFailedException("Error al enviar correo", 400);
@@ -486,7 +487,7 @@ namespace auth.in2sport.application.Services.LoginServices
                             
                         var result = await _recoverPassword.UpdateAsync(newRecoverPassword);
 
-                        var resultSendEmail = await SendEmail(user, tokenConfirmation);
+                        var resultSendEmail = await SendEmailRecoverPassword(user, tokenConfirmation);
                         if (!resultSendEmail)
                         {
                             throw new CreateFailedException("Error al enviar correo", 400);
@@ -590,17 +591,14 @@ namespace auth.in2sport.application.Services.LoginServices
             }
             catch (ArgumentNullException ex)
             {
-                Console.WriteLine($"Se produjo una excepción de argumento nulo: {ex.Message}");
                 throw;
             }
             catch (ArgumentException ex)
             {
-                Console.WriteLine($"Se produjo una excepción de argumento inválido: {ex.Message}");
                 throw;
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Se produjo una excepción no manejada: {ex.Message}");
                 throw;
             }
         }
@@ -615,18 +613,15 @@ namespace auth.in2sport.application.Services.LoginServices
             }
             catch (ArgumentNullException ex)
             {
-                Console.WriteLine($"Error: La cadena de contraseña es nula. {ex.Message}");
                 throw;
             }
             catch (EncoderFallbackException ex)
             {
-                Console.WriteLine($"Error: Problema con la codificación de caracteres. {ex.Message}");
                 throw;
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error inesperado durante la encriptación de la contraseña. {ex.Message}");
-                throw;
+                throw ex;
             }
         }
 
@@ -689,42 +684,47 @@ namespace auth.in2sport.application.Services.LoginServices
             return Convert.ToHexString(tokenBytes);
         }
 
-        public async Task<bool> SendEmail(Users user, string tokenConfirmation)
+        public async Task<bool> SendEmailRegister(Users user, string tokenConfirmation)
         {
             try
             {
-                string content = @"
-                                    <!DOCTYPE html>
-                                    <html lang='es'>
-                                    <body>
-                                        <div style='width:600px;padding:20px;border:1px solid #DBDBDB;border-radius:12px;font-family:Sans-serif'>
-                                            <h1 style='color:#C76F61'>Confirmar correo electrónico</h1>
-                                            <p style='margin-bottom:25px'>Estimado/a&nbsp;<b>{0}</b>:</p>
-                                            <p style='margin-bottom:25px'>Gracias por abrir una cuenta con nosotros. Para utilizar su cuenta, primero deberá confirmar su correo electrónico usando la siguiente llave.</p>
-                                            <p style='margin-bottom:25px'><b>{1}</b></p>
-                                            <p style='margin-top:25px'>No respondas directamente a este email generado automáticamente. .</p>
-                                            <p style='margin-top:25px'>Gracias.</p>
-                                        </div>
-                                    </body>
-                                    </html>";
+                var htmlPath = Path.Combine(AppContext.BaseDirectory, "Email", "Templates", "ValidationEmailTemplate.html");
+                if (!File.Exists(htmlPath))
+                {
+                    throw new FileNotFoundException($"No se encontró la plantilla HTML en la ruta: {htmlPath}");
+                }
 
-                string htmlBody = string.Format(content, user.FirstName, tokenConfirmation);
+                var htmlTemplate = File.ReadAllText(htmlPath);
+                var personalizedHtml = htmlTemplate.Replace("{{Token}}", tokenConfirmation);
                 var email = new MimeMessage();
 
-                email.From.Add(new MailboxAddress("In2sport", "krlosh1096@gmail.com"));
+                var fromEmail = _config["SmtpConfig:Username"];
+
+                email.From.Add(new MailboxAddress("In2sport", fromEmail));
                 email.To.Add(MailboxAddress.Parse(user.Email));
-                email.Subject = "Correo Confirmacion";
-                email.Body = new TextPart(TextFormat.Html)
+                email.Subject = "CORREO CONFIRMACIÓN";
+                var builder = new BodyBuilder
                 {
-                    Text = htmlBody
+                    HtmlBody = personalizedHtml
                 };
+
+                // Agregar imágenes embebidas (CID)
+                var iconoPath = Path.Combine(AppContext.BaseDirectory, "Email", "Images", "icono.png");
+                var imagen1Path = Path.Combine(AppContext.BaseDirectory, "Email", "Images", "imagen1.jpeg");
+                var imagen2Path = Path.Combine(AppContext.BaseDirectory, "Email", "Images", "imagen2.jpeg");
+
+                builder.LinkedResources.Add(iconoPath).ContentId = "LogoIn2Sports";
+                builder.LinkedResources.Add(imagen1Path).ContentId = "ImagenPrincipal";
+                builder.LinkedResources.Add(imagen2Path).ContentId = "ImagenSecundaria";
+
+                email.Body = builder.ToMessageBody();
 
                 using (var smtp = new SmtpClient())
                 {
                     try
                     {
-                        await smtp.ConnectAsync("smtp.gmail.com", 587, SecureSocketOptions.StartTls);
-                        await smtp.AuthenticateAsync("krlosh1096@gmail.com", "hnysgpmhdbnouoyh"); 
+                        await smtp.ConnectAsync(_config["SmtpConfig:Host"], 587, SecureSocketOptions.StartTls);
+                        await smtp.AuthenticateAsync(fromEmail, _config["SmtpConfig:Password"]);
                         await smtp.SendAsync(email);
 
                         return true;
@@ -741,11 +741,92 @@ namespace auth.in2sport.application.Services.LoginServices
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"An error occurred: {ex.Message}");
-
-                return false;
+                throw ex;
             }
 
+        }
+
+        public async Task<bool> SendEmailRecoverPassword(Users user, string tokenConfirmation)
+        {
+            try
+            {
+                string content = @"
+                                    <!DOCTYPE html>
+                                    <html lang='es'>
+                                    <body>
+                                        <div style='width:600px;padding:20px;border:1px solid #DBDBDB;border-radius:12px;font-family:Sans-serif'>
+                                            <h1 style='color:#C76F61'>Recuperación de contraseña</h1>
+                                            <p style='margin-bottom:25px'>Estimado/a&nbsp;<b>{0}</b>:</p>
+                                            <p style='margin-bottom:25px'>
+                                                Hemos recibido una solicitud para restablecer la contraseña de su cuenta. 
+                                                Si no ha realizado esta solicitud, puede ignorar este mensaje.
+                                            </p>
+                                            <p style='margin-bottom:25px'>
+                                                Para continuar con el restablecimiento de su contraseña, utilice la siguiente clave:
+                                            </p>
+                                            <p style='margin-bottom:25px'><b>{1}</b></p>
+                                            <p style='margin-top:25px'>No respondas directamente a este correo electrónico generado automáticamente.</p>
+                                            <p style='margin-top:25px'>Gracias.</p>
+                                        </div>
+                                    </body>
+                                    </html>
+                                    ";
+
+                string htmlBody = string.Format(content, user.FirstName, tokenConfirmation);
+                var email = new MimeMessage();
+
+                var fromEmail = _config["SmtpConfig:Username"];
+
+                email.From.Add(new MailboxAddress("In2sport", fromEmail));
+                email.To.Add(MailboxAddress.Parse(user.Email));
+                email.Subject = "RECUPERAR CONTRASEÑA";
+                email.Body = new TextPart(TextFormat.Html)
+                {
+                    Text = htmlBody
+                };
+
+                using (var smtp = new SmtpClient())
+                {
+                    try
+                    {
+                        await smtp.ConnectAsync(_config["SmtpConfig:Host"], 587, SecureSocketOptions.StartTls);
+                        await smtp.AuthenticateAsync(fromEmail, _config["SmtpConfig:Password"]); 
+                        await smtp.SendAsync(email);
+
+                        return true;
+                    }
+                    catch (Exception ex)
+                    {
+                        throw ex;
+                    }
+                    finally
+                    {
+                        await smtp.DisconnectAsync(true);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+
+        }
+
+        private string? RemoveAllSpaces(object? input)
+        {
+            if (input == null) return null;
+
+            var str = input.ToString();
+            return string.IsNullOrWhiteSpace(str) ? null : Regex.Replace(str, @"[^a-zA-Z]", "");
+        }
+
+        public static string? KeepOnlyDigits(object? input)
+        {
+            if (input == null) return null;
+
+            var str = input.ToString();
+            if (string.IsNullOrWhiteSpace(str)) return null;
+            return Regex.Replace(str, @"\D", "");
         }
 
         #endregion

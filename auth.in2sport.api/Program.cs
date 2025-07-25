@@ -4,6 +4,7 @@ using auth.in2sport.application.Services.UserServices;
 using auth.in2sport.infrastructure.Repositories;
 using auth.in2sport.infrastructure.Repositories.Postgres;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using System.Threading.RateLimiting;
@@ -100,10 +101,10 @@ app.Use(async (context, next) =>
     await next();
 });
 
-app.UseMiddleware<ApiKeyMiddleware>();
 
 app.UseHttpsRedirection();
 app.UseCors("AllowAllOrigins");
+app.UseMiddleware<ApiKeyMiddleware>();
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseRateLimiter();
