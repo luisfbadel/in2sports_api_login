@@ -1,9 +1,13 @@
-﻿namespace auth.in2sport.application.Services.UserServices.Response
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace auth.in2sport.application.Services.UserServices.Request
 {
-    public class UserResponse
+    public class UpdateUserRequest
     {
+        [Required]
         public Guid Id { get; set; }
 
+        [EmailAddress]
         public string? Email { get; set; }
 
         public int? TypeUser { get; set; }
@@ -15,6 +19,8 @@
         public string? FirstLastname { get; set; }
 
         public string? SecondLastname { get; set; }
+
+        public DateTime Birthdate { get; set; }
 
         public int? TypeDocument { get; set; }
 
@@ -28,16 +34,7 @@
 
         public string? Address { get; set; }
 
-        public int status { get; set; }
-
-        public int PasswordValidation { get; set; }
-
-        public DateTime Birthdate { get; set; }
-
         public string? InstitutionName { get; set; }
-
-        public int EmailValidation { get; set; }
-
 
     }
 }

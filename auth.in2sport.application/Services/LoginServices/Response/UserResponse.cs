@@ -1,4 +1,4 @@
-﻿namespace auth.in2sport.application.Services.UserServices.Response
+﻿namespace auth.in2sport.application.Services.LoginServices.Response
 {
     public class UserResponse
     {
@@ -37,7 +37,6 @@
         public string? InstitutionName { get; set; }
 
         public int EmailValidation { get; set; }
-
 
     }
 }
